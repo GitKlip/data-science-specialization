@@ -1,0 +1,330 @@
+# RNotes
+Erik Cornelsen  
+
+This is a collection of shorthand notes on the various courses in the Data Science specialization from John Hopkins Univiersity.  The rpimary purpouse is to help remind what functions are out there for the differenct subjects involved. 
+
+# Classes
+
+## 1 - Data Scientist Toolbox  -  *[toc](#TOC)*
+
+* Useful Cheat Sheets and References
+    * R Language
+        * `help.start()`
+        * `?<function or package name>`
+        * [R Style Guide from Google](http://google-styleguide.googlecode.com/svn/trunk/Rguide.xml)
+        * [R Reference Card](http://cran.r-project.org/doc/contrib/Short-refcard.pdf)
+        * [R Cookbook](http://www.cookbook-r.com/)
+        * [R and Data Mining](http://www.rdatamining.com/)
+    * R Packages
+        * [Useful Packages List](https://support.rstudio.com/hc/en-us/articles/201057987-Quick-list-of-useful-R-packages)
+        * [data.table Cheatsheet](https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf)
+        * [data.frame Cheatsheet](https://drive.google.com/folderview?pli=1&ddrp=1&id=0ByIrJAE4KMTtcVBmdm1BOEZoeEk#)
+            + 
+        * [Package Devevelopment Cheatsheet](http://www.rstudio.com/wp-content/uploads/2015/03/devtools-cheatsheet.pdf)
+    * R Markdown
+        * [R Markdown Online Reference with Examples](http://rmarkdown.rstudio.com/)
+        * [R Markdown Cheatsheet](http://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+        * [R Markdown Reference](http://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf)
+        * [Shiny Cheatsheet](http://www.rstudio.com/wp-content/uploads/2015/02/shiny-cheatsheet.pdf)
+    * R Visualizations
+        * [ggplot2 Cheatsheet](http://www.rstudio.com/wp-content/uploads/2015/04/ggplot2-cheatsheet.pdf)
+        * [ggplot2 walkthrough](http://zevross.com/blog/2014/08/04/beautiful-plotting-in-r-a-ggplot2-cheatsheet-3/)
+    * R Studio
+        * [RStudio Cheatsheets](http://www.rstudio.com/resources/cheatsheets/)
+    * Git and GitHub
+        * [Git's Cheatsheet](https://training.github.com/kit/downloads/github-git-cheat-sheet.pdf)
+        * [Tower's Cheatsheet & Best Practices](http://www.git-tower.com/blog/posts/git-cheat-sheet/git-cheat-sheet.zip)
+        * [GIT Interactive Cheatsheet](http://ndpsoftware.com/git-cheatsheet.html)
+        * [GitHub Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#code)
+
+### Working with Git & GitHub  -  *[toc](#TOC)*
+
+**The order of operations is:**
+
+1. Make your change.
+1. git add - this stages your changes for committing
+1. git commit - this commits your staged changes locally
+1. git push - this pushes your committed changes to a remote
+If you push without committing, nothing gets pushed. If you commit without adding, nothing gets committed. If you add without committing, nothing at all happens, git merely remembers that the changes you added should be considered for the following commit.
+In other words: add and commit are local operations, push, pull and fetch are operations that interact with a remote.
+
+**Undo a commit and redo**
+```
+$ git commit ...              (1)
+$ git reset --soft HEAD~1     (2)
+<< edit files as necessary >> (3)
+$ git add ....                (4)
+$ git commit -c ORIG_HEAD     (5)
+```
+
+1. This is what you want to undo
+1. This is most often done when you remembered what you just committed is incomplete, or you misspelled your commit message1, or both. Leaves working tree as it was before "commit".
+1. Make corrections to working tree files.
+1. Stage changes for commit.
+1. Commit the changes, reusing the old commit message. reset copied the old head to .git/ORIG_HEAD; commit with -c ORIG_HEAD will open an editor, which initially contains the log message from the old commit and allows you to edit it. If you do not need to edit the message, you could use the -C option instead.
+
+### Check Environment  -  *[toc](#TOC)*
+
+* R.version
+* R.version.string
+* packageVersion("packageNameHere")
+* Sys.getlocale("LC_TIME")
+
+
+
+----------------------------------------------------
+
+## 2 - R Programming  -  *[toc](#TOC)*
+
+----------------------------------------------------
+
+## 3 - Get and Clean Data  -  *[toc](#TOC)*
+
+### Understand Your Data  -  *[toc](#TOC)*
+
+* dim(DF) - gives rows and columns of DF
+* str(DF) - gives rows, columns, column names, column types, and sample values
+* summary(DF)
+* complete.cases(DF) - see if any columns have nulls (false = nulls exist)
+* is.na()
+
+
+#### Dealing With Nulls  -  *[toc](#TOC)*
+
+1. check for any nulls across data frame rows using `complete.cases(DF)`
+1. is.na()
+
+
+
+
+### Data Wrangle (subset, group, etc)  -  *[toc](#TOC)*
+
+base
+dplyr
+data.frame
+data.table
+
+A  | B | C
+--- | --- | ---
+1  | Male | Blue
+2  | Female | Pink
+
+Summary of different data objects and what you can do with them
+
+
+object type     array        DF	        list	    nothing
+array	        apply	    .	        .	        .
+data frame	    -           aggregate	by	        .
+data table      -           aggregate   by          -
+list	        sapply	    .	        lapply	    .
+n replicates	replicate	.	        replicate	.
+function args	mapply	    .	        mapply	    .
+
+
+
+
+#### Data Frames  -  *[toc](#TOC)*
+
+JOINING DATA FRAMES
+http://stackoverflow.com/questions/1299871/how-to-join-data-frames-in-r-inner-outer-left-right
+
+Inner join: merge(df1, df2) will work for these examples because R automatically joins the frames by common variable names, but you would most likely want to specify merge(df1, df2, by="CustomerId") to make sure that you were matching on only the fields you desired. You can also use the by.x and by.y parameters if the matching variables have different names in the different data frames.
+
+* Outer join: merge(x = df1, y = df2, by = "CustomerId", all = TRUE)
+* Left outer: merge(x = df1, y = df2, by = "CustomerId", all.x=TRUE)
+* Right outer: merge(x = df1, y = df2, by = "CustomerId", all.y=TRUE)
+* Cross join: merge(x = df1, y = df2, by = NULL)
+
+rbind()
+cbind()
+
+#### dplyr Data Frame Table  -  *[toc](#TOC)*
+
+1. package dplyr is the next iteration of plyr, focussing on only data frames.
+1. dplyr creates a data frame table to manipulate (it prints out much nicer than normal DF)
+    1. `DFT <- tbl_df(DF)`
+1. dplyr package has 5 main functions (for each basic verb of data manipulation)
+    1. select()     - select columns
+        1. rename() - rename columns
+        1. View()   - see all data in a set instead of just a few rows
+    1. filter()     - filter rows by logical criteria
+        1. slice()  - filter rows by numeric position
+    1. arrange()    - order by
+    1. mutate()     - create a new column from existing ones and add it to the DFT
+        1. transmute() - only keep the new variables
+    1. summarize()  - aggregate data
+        1. n()      - count total values in vector
+        1. n_distinct() - count unique values in vector
+        ```  
+        summarize(by_package,
+                  count = n(),
+                  unique = n_distinct(ip_id),
+                  countries = n_distinct(country),
+                  avg_bytes = mean(size)) 
+        ```                  
+1. other useful functions
+    1. group_by()   - this affects the behavior of the other functions
+        1. grouped select() is the same as ungrouped select(), excepted that retains grouping variables are always retained.
+        1. grouped arrange() orders first by grouping variables
+        1. mutate() and filter() are most useful in conjunction with window functions (like rank(), or min(x) == x), and are described in detail in vignette("window-function").
+        1. sample_n() and sample_frac() sample the specified number/fraction of rows in each group.
+        1. slice() extracts rows within each group.
+        1. summarise() is easy to understand and very useful, and is described in more detail below.
+        ```
+        by_tailnum <- group_by(flights, tailnum)
+        delay <- summarise(by_tailnum,
+                          count = n(),
+                          dist = mean(distance, na.rm = TRUE),
+                          delay = mean(arr_delay, na.rm = TRUE))
+        delay <- filter(delay, count > 20, dist < 2000)
+        ```
+    1. distinct()   - used with select() like `distinct(select(flights, origin, dest))`
+    1. sample_n() and sample_frac()
+1. Chaining function calls
+    1. dplyr provides the %>% operator to chain calls without having to save temp data sets. x %>% f(y) turns into f(x, y).
+        ```
+        flights %>%
+          group_by(year, month, day) %>%
+          select(arr_delay, dep_delay) %>%
+          summarise(
+            arr = mean(arr_delay, na.rm = TRUE),
+            dep = mean(dep_delay, na.rm = TRUE)
+          ) %>%
+          filter(arr > 30 | dep > 30)
+        ```
+        
+#### Tidyr  -  *[toc](#TOC)*
+
+1. [Tidy Data White Paper](http://vita.had.co.nz/papers/tidy-data.pdf)
+1. tidy data satisfies three conditions:
+    1. Each variable forms a column
+    1. Each observation forms a row
+    1. Each type of observational unit forms a table.  
+        1. when you see that distinct data (like id, name, gender) is repeated, that's a hint our data has multiple observational units.  Solution is to break data into separate tables
+        1. when you have two files that separate out the same data because of the name of the file (passed.txt, failed.txt), that's a hint that the files need to be merged and a new variable created from the file names.
+            1. use mutate to add a new column to each file with the new variable
+            1. use bind_rows() to join them.
+1. library(tidyr) - (swirl() has great tutorial)
+    1. gather() - takes multiple columns and collapeses into one row per key-value pair.
+    1. separate() - turns a single characer column into multiple columns
+    1. spread() - spread a key-value pair across multiple columns
+    1. extract_numeric() - use with mutate() or transmute() to strip out text from column
+    1. 
+    
+```
+# The SAT is a popular college-readiness exam in the United States that consists of three sections: critical reading, mathematics, and writing. Students can earn up to 800 points on each section. This dataset presents the total number of students, for each combination of exam section and sex, within each of six score ranges. It comes from the 'Total Group Report 2013', which can be found here:
+# http://research.collegeboard.org/programs/sat/data/cb-seniors-2013
+Source: local data frame [6 x 10]
+  score_range read_male read_fem read_total math_male math_fem math_total write_male write_fem write_total
+1     700-800     40151    38898      79049     74461    46040     120501      31574     39101       70675
+2     600-690    121950   126084     248034    162564   133954     296518     100963    125368      226331
+3     500-590    227141   259553     486694    233141   257678     490819     202326    247239      449565
+4     400-490    242554   296793     539347    204670   288696     493366     262623    302933      565556
+5     300-390    113568   133473     247041     82468   131025     213493     146106    144381      290487
+6     200-290     30728    29154      59882     18788    26562      45350      32500     24933       57433
+
+sat %>%
+    # 1. select() all columns that do NOT contain the word "total", since if we have the male and female data, we can always recreate the total count in a separate column, if we want it.
+    select(-contains("total")) %>%
+    # 2. gather() all columns EXCEPT score_range, using key = part_sex and value = count.
+    gather(part_sex, count, -score_range) %>%
+    # 3. separate() part_sex into two separate variables (columns), called "part" and "sex", respectively.
+    separate(part_sex,into=c("part","sex")) %>%
+    # 4. Use group_by() (from dplyr) to group the data by part and sex, in that order.
+    group_by(part,sex) %>%
+    # 5. Use mutate to add two new columns, whose values will be automatically computed group-by-group: total = sum(count), prop = count / total
+    mutate(total = sum(count), prop = count / total) %>%
+    # display the result
+    print
+    
+   score_range part  sex  count  total       prop
+1      700-800 read male  40151 776092 0.05173485
+2      600-690 read male 121950 776092 0.15713343
+3      500-590 read male 227141 776092 0.29267278
+4      400-490 read male 242554 776092 0.31253253
+5      300-390 read male 113568 776092 0.14633317
+6      200-290 read male  30728 776092 0.03959324
+7      700-800 read  fem  38898 883955 0.04400450
+8      600-690 read  fem 126084 883955 0.14263622
+9      500-590 read  fem 259553 883955 0.29362694
+10     400-490 read  fem 296793 883955 0.33575578
+..         ...  ...  ...    ...    ...        ...
+```
+
+
+#### Data Table  -  *[toc](#TOC)*
+
+1. package data.table
+1. data.table is faster than data.frame
+1. reading files
+    1. DT:fread() is much faster than DF:read.table() or DT:data.table()
+1. tables() - see all tables in memory
+1. subset rows & cols
+    1. http://www.statmethods.net/management/subset.html
+    1. http://cran.r-project.org/web/packages/data.table/data.table.pdf
+    1. vignette("datatable-intro")
+	1. vignette("datatable-faq")
+	1. DT[row,col]
+	1. DT[DT$y=="a",]
+	
+
+----------------------------------------------------
+
+# Random Topics  -  *[toc](#TOC)*
+
+## SWIRL training Exercises  -  *[toc](#TOC)*
+
+https://github.com/swirldev/swirl_courses
+
+* library(swirl)
+* install_from_swirl("R Programming")
+* install_from_swirl("Getting and Cleaning Data") #dplyr, tidyr, lubridate
+* install_from_swirl("Exploratory Data Analysis") #plot, lattice, ggplot
+* swirl()
+
+
+## Tips & Tricks  -  *[toc](#TOC)*
+
+1. The edit() function brings up an editor where you can look at and edit an R object
+
+
+## Project Ideas  -  *[toc](#TOC)*
+
+* find or create package to automate basic descriptives?
+	* look at data
+	* output basic html visualizations (histos, bar, box, chart)
+	* output html files that are linked and have 
+	* melt() > ggplot facet grid
+* discussions from instructure
+* church growth
+* 
+
+## What's a Quantile?  -  *[toc](#TOC)*
+
+We need to know the value of 'count' that splits the data into the top 1% and bottom 99% of packages based on total downloads. In statistics, this is called the 0.99, or 99%, sample quantile. Use quantile(pack_sum$count, probs = 0.99) to determine this number.
+
+
+# TO SORT THROUGH
+
+## How to determine what something is?:
+
+* library(pryr)
+* typeof(x)
+* is.function(x)
+* is.primitive(x)
+* otype(x)    
+* ftype(x)
+* methods("mean")
+* methods(class = "ts")
+
+## WORKSPACE MANAGEMENT
+
+> sessionInfo()
+> R.version.string 
+> options()
+> getOption("width") 
+> search()
+
+
+
+

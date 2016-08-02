@@ -1,0 +1,198 @@
+---
+title: "Exploratory Data Analysis Notes"
+author: "Erik Cornelsen"
+date: "July 26, 2016"
+output:
+  html_document:
+    fig_caption: yes
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+
+---
+
+----------------------------------------------------
+
+## 4 - Exploratory Data Analysis (Graphics)  -  *[toc](#TOC)*
+
+* Plots help to understand data, find patterns, resolve problems, suggest strategies for modeling, and communicate with others
+* Exploratory plots are for your personal understanding, not for formal sharing.  usually ad-hoc and lots of them.
+* Try to always have a background/vague question before you start plotting, since it will drive what you find.
+* Find examples of other peoples graphs
+    * [R Graph Gallary](http://rgraphgallery.blogspot.com/)
+    * [R Bloggers](http://www.r-bloggers.com/)
+* There are **3 main plotting systems**: base, lattice, ggplot2
+
+### Visualization Principles  -  *[toc](#TOC)*
+
+1. Show Comparisons. When giving a summary of data, always ask "compared to what?".
+	1. air cleaner, compared to no air cleaner
+1. Show causality, mechanism, explanation, systematic structure	
+	1. what do you think is happening?
+	1. symptoms improved with air cleaner? > we think it's removing particulate matter
+	1. don't confuse correlation with causation, correlation simply suggests something
+1. Show multivariate data (more than 2 vars)	
+	1. real world has lots of things interacting, need to tell a richer story.
+	1. single graphs could usually acomodate 3 variables, then make sub graphs to split on a 4th
+1. Integrate multiple modes of evidence 
+	1. use different ways to display the evidence (plot, table, etc)
+	1. completly integrate words, numbrs,images, diagrams
+	1. don't let the tool drive the analysis, you pick the right tool for the need.
+1. Describe and Document Evidence in your graphics
+	1. give credibility by using appropriate lables, scales, sources, etc
+1. Content is King
+	1. need high quality, relevance, and integrity of content (data + display)
+	1. need an interesting story to tell or graphics can't help
+
+(Source: 'Beautiful Evidence' www.edwardtufte.com)		
+
+### Graphics Devices  -  *[toc](#TOC)*
+
+1. a graphics device is anywhere you can make a graph appear (screen, pdf, jpg, etc)
+    1. usually use screen to explore and send to other devices for final output 
+    1. output of devices are usually vector or bitmap formats
+        1. vector formats - resize easily.  good with lines.  not good for tons of data points.
+        1. bitmap formats - don't resize. not good with lines. good with tons of data points. 
+        1.  Vector Formats      |   Bitmap Format
+            --------------------|-------------------------------
+            pdf()               |   png() - good 4 lines and points
+            svg() - good 4 web  |   jpg() - good 4 color gradients
+            win.metafile()      |   tiff()
+            postscript()        |   bmp()
+1. Writing to a device
+    1.  > pdf(file='name')  
+        > ...code to create plot here...  
+        > dev.off()  # close device  
+1. device functions
+    1. dev.cur() - which device is currently active
+    1. dev.set() - choose an existing device to use
+    1. dev.copy()
+    1. dev.compy2pdf()
+
+
+### Base Plotting System  -  *[toc](#TOC)*
+
+* "Artists Palate" approach where you create each piece from blank canvas
+* Good for fine grain control as you have to specify everything. useful when creating publication level plots
+* has a 2 phase paradigm. 1) initialize/generate plot  2) annotate the existing plot
+
+1. core functions
+    1. hist() - shows distribution of a single variable
+    1. plot() - basic x,y plot
+    1. boxplot() - boxes at different levels
+1. other base functions
+    1. plot()
+    1. lines() - connect the dots
+    1. points() - add points to plot
+    1. text() - add text inside plot
+    1. title() - add label outside plot
+    1. mtext() - margin text
+    1. axis() - axis labels & ticks
+    1. abline() - add a 'level' line to the plot
+1. key common paramaters
+    1. type - one character type of plot (line, bar, smoothline, points)
+    1. pch - plotting symbol
+    1. lty - line type
+    1. lwd - line width
+    1. col - color (numeric, string, hex, colors() )
+    1. xlab - xlabel
+    1. ylab - y label
+    1. main,main2 - main title/label of the entire plot
+1. Global paramaters using **par()**
+    1. **TIP:** save default par values to variable before you begin changes, that way you can restore them if needed.
+    1. las - axis label orientation
+    1. bg - background color
+    1. mar - margin size
+    1. oma - outer margin size
+    1. mfrow - plots per row
+    1. mfcol - plots per column
+    
+
+### Lattice Plotting System  -  *[toc](#TOC)*
+
+* is good for creating lots of plots at once on high dimensional data
+* large number of plots constructed with single function call but annotation can be tricky
+
+1. Functions
+    1. xyplot(y ~ x | f * g, dataframe)
+        1. uses formula notation (reason for '~')
+        1. reads as: "look @ scatterplot of y & x for every level of f & g"
+        1. returns an objecyt of class 'trellis' that must be printed.  R's autoprinting takes care of it.
+    1. Panel functions are used to customize inside each panel
+        1. panel.xyplot() - default needed to make data appear
+        1. panel.abline() - overlay specified line
+        1. panel.lmline() - overlay linear regression line (best fit)
+
+  
+### ggplot2 Plotting System  -  *[toc](#TOC)*
+
+* implements 'Grammer of Graphics' concept 
+* shorten the distance from the mind to the page
+
+1. visiualizations are composed of different geomitires that work with each other. 
+1. Some of the basic components: data > geometries/layers > aesthetics
+    + data
+	+ geometries / layers (points, lines, bars)
+	+ aesthetics (x, y, size, color, shape, alpha, etc)
+	+ scales (numeric, color, size)
+1. important to use factor variables to slice and dice subsets of the data (label them well)
+1. facets are like panels in lattice, separate displays of different points
+1. **qplot()** - like base plot() function, built on top of ggplot2()
+    ```{r qplot}
+    library(ggplot2)
+    qplot(x = displ, y = hwy, data = mpg, color = drv)
+    qplot(displ,hwy,data=mpg,geom=c("point","smooth"))
+    qplot(hwy,data=mpg,fill=drv)
+    #ggsave("plot.png")
+    ```
+1. [**ggplot()**](docs.ggplot2.org) - core function
+    1. **Prefered**: is very flexible. more raw > undersand what you're doing more than using qplot()
+    1. SAMPLE CODE for ggplot2
+    
+    `
+        library(ggplot2)
+        
+        ggplot(data=diamonds) +
+          geom_point(aes(x=carat, y=price, color=clarity)) +
+          geom_smooth(aes(x=carat, y=price)) +
+          facet_grid(color ~ cut)
+        
+        ggplot(data=diamonds) +
+          geom_point(aes(x=carat, y=depth, size=price))
+        
+        ggplot(diamonds) +
+          geom_point(aes(x=carat, y=table, color=price, shape=clarity, alpha=depth))
+        
+        #-- Advanced Thought
+        #ggplot expects your dataframe to be 'tidy':
+        # - each row is an observation
+        # - each column is an attribute/variable/dimension
+        
+        #But, you can "melt" the dataframe into a longer shape:
+        #	diamonds$id <- seq(1, nrow(diamonds))
+        #	d2 <- melt(data=diamonds, id.vars=c("id"), measure.vars=c("carat", "depth", "table", "price"))
+    `
+
+### pairs Plots  -  *[toc](#TOC)*
+
+1. pairs(DT)
+1. GGally has a more detailed pairs plot
+    1. any colour variable has to be a factor
+    1. you can specify columns, behavior of diagonal entries, and labels
+    1. `?ggpairs` has good examples at the bottom that are very helpful for visualizing some of the possibilities.    
+```{r}
+library(GGally)
+data(iris)
+ggpairs(iris, colour='Species', alpha=0.4)
+data(tips, package = "reshape")
+ggpairs(tips[,1:3])
+ggpairs(
+  tips[,c(1,3,4,2)],
+  upper = list(continuous = "density", combo = "box"),
+  lower = list(continuous = "points", combo = "dot")
+)
+```
+1. use ggplot2 normally
+```
+ ggplot(data, aes(x=id, y=value)) + geom_point() + facet_grid(.~variable). 
+```

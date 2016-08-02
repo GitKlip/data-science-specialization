@@ -1,0 +1,256 @@
+---
+title: "Exploration of PM2.5 emissions Data"
+author: "Erik Cornelsen"
+date: "Saturday, May 09, 2015"
+output:
+  html_document:
+    fig_caption: yes
+    keep_md: yes
+    toc: yes
+---
+
+## Introduction
+
+The overall goal of this assignment is to explore the National Emissions Inventory database and see what it say about fine particulate matter pollution in the United states over the 10-year period 1999-2008. 
+
+Fine particulate matter (PM2.5) is an ambient air pollutant for which there is strong evidence that it is harmful to human health. In the United States, the Environmental Protection Agency (EPA) is tasked with setting national ambient air quality standards for fine PM and for tracking the emissions of this pollutant into the atmosphere. Approximatly every 3 years, the EPA releases its database on emissions of PM2.5. This database is known as the National Emissions Inventory (NEI). You can read more information about the NEI at the [EPA National Emissions Inventory web site](http://www.epa.gov/ttn/chief/eiinformation.html). For each year and for each type of PM source, the NEI records how many tons of PM2.5 were emitted from that source over the course of the entire year.
+
+## Data
+
+The data for this analysis is available from the course web site as a single zip file:
+
+  * [Data for Peer Assessment](https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip) [29Mb]
+
+The zip file contains two files:
+
+1. **PM2.5 Emissions Data** (`summarySCC_PM25.rds`): This file contains a data frame
+with all of the PM2.5 emissions data for 1999, 2002, 2005, and 2008. For each
+year, the table contains number of **tons** of PM2.5 emitted from a specific
+type of source for the entire year. Here are the first few rows.
+    
+```    
+    ##     fips      SCC Pollutant Emissions  type year
+    ## 4  09001 10100401  PM25-PRI    15.714 POINT 1999
+    ## 8  09001 10100404  PM25-PRI   234.178 POINT 1999
+    ## 12 09001 10100501  PM25-PRI     0.128 POINT 1999
+    ## 16 09001 10200401  PM25-PRI     2.036 POINT 1999
+    ## 20 09001 10200504  PM25-PRI     0.388 POINT 1999
+    ## 24 09001 10200602  PM25-PRI     1.490 POINT 1999
+```
+
+  * `fips`: A five-digit number (represented as a string) indicating the U.S. county 
+  * `SCC`: The name of the source as indicated by a digit string (see source code classification table)
+  * `Pollutant`: A string indicating the pollutant
+  * `Emissions`: Amount of PM2.5 emitted, in tons
+  * `type`: The type of source (point, non-point, on-road, or non-road)
+  * `year`: The year of emissions recorded
+
+2. **Source Classification Code Table** (`Source_Classification_Code.rds`): This
+table provides a mapping from the SCC digit strings int he Emissions table to
+the actual name of the PM2.5 source. The sources are categorized in a few
+different ways from more general to more specific. For example, source
+'10100101' is known as 'Ext Comb /Electric Gen /Anthracite Coal /Pulverized
+Coal'.
+
+
+## Load the Data
+```{r loadData, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE} 
+setwd("~/Analysis/Coursera/data-science-coursera/04-ExploratoryDataAnalysis/EXData_Project2")
+getwd()
+
+
+if(!file.exists("data")){dir.create("data")}
+if(!file.exists("data\\summarySCC_PM25.rds") | !file.exists("data\\Source_Classification_Code.rds")){
+    fileUrl <- "http://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
+    zipFileName <- "data\\EPA_NEI_data.zip"
+    download.file(url = fileUrl, destfile = zipFileName, mode="wb")
+    unzip(zipfile = zipFileName, exdir = "data")
+}
+
+# National Emissions Inventory database.  PM2.5 Emissions Data for 1999, 2002, 2005, and 2008
+#   * `fips`: A five-digit number (represented as a string) indicating the U.S. county 
+#   * `SCC`: The name of the source as indicated by a digit string (see source code classification table)
+#   * `Pollutant`: A string indicating the pollutant
+#   * `Emissions`: Amount of PM2.5 emitted, in tons
+#   * `type`: The type of source (point, non-point, on-road, or non-road)
+#   * `year`: The year of emissions recorded
+if(!exists("NEI")){
+    NEI <- readRDS("data\\summarySCC_PM25.rds")
+#     str(NEI)
+}
+
+# Source Classification Code Table. describes the data in the table above
+if(!exists("SCC")){
+    SCC <- readRDS("data\\Source_Classification_Code.rds")
+#     str(SCC)
+}
+
+#Merge the datasets together
+if(!exists("ALL")){
+    ALL <- merge(NEI, SCC, all.x = TRUE, all.y = FALSE, by = c("SCC"))
+#     str(ALL)
+}
+```
+
+## Explore and Analyze Data
+Below are the questions we have about the data and some plots that help us to visualize the answers. For each question I created a .R file to create the plot that best addressed the question.
+
+###1. Have total emissions from PM2.5 decreased in the United States from 1999 to 2008? 
+  Using the **base** plotting system, make a plot showing the _total_ PM2.5 emission from all sources for each of the years 1999, 2002, 2005, and 2008.
+
+Answer: yes, it's decreasing
+
+```{r Q1, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+# First we'll aggregate the total PM2.5 emission from all sources for each of the years 1999, 2002, 2005, and 2008.
+DF <- aggregate(NEI$Emissions, by=list(NEI$year), FUN=sum)
+
+# Using the base plotting system, now we plot the total PM2.5 Emission from all sources
+plot(DF, type = "l", main = "Total PM2.5 Emissions", ylab = "Emissions (tons)", xlab = "Year")
+
+```
+
+
+###2. Have total emissions from PM2.5 decreased in the **Baltimore City**, Maryland (`fips == "24510"`) from 1999 to 2008? Use the **base** plotting system to make a plot answering this question.
+  
+Answer: overall they have decreased, though not in a linear pattern.
+
+```{r Q2, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+# Subset data for Blatimore City, MD 
+BALTIMORE <- ALL[ALL$fips == "24510",] 
+# str(BALTIMORE)
+# sum(is.na(BALTIMORE))
+
+# Calculate yearly totals from all sources for each of the years 1999, 2002, 2005, and 2008.
+DF <- aggregate(BALTIMORE$Emissions, by=list(BALTIMORE$year), FUN=sum)
+# DF
+
+# Using the base plotting system, we plot the total Emission for Baltimore City, MD
+plot(DF, type = "l", main = "Total Emissions for Baltimore City, MD", ylab = "Emissions (tons)", xlab = "Year")
+```
+
+###3. Of the four types of sources indicated by the `type` (point, nonpoint, onroad, nonroad) variable, which of these four sources have seen decreases in emissions from 1999-2008 for **Baltimore City**? Which have seen increases in emissions from 1999-2008? Use the **ggplot2** plotting system to make a plot answer this question.
+
+```{r Q3, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+library(ggplot2)
+str(BALTIMORE)
+
+qplot(displ,hwy,data=mpg,geom=c("point","smooth"))
+
+qplot(hwy,data=mpg,fill=drv)
+
+#bar version
+ggplot(data = BALTIMORE, aes(x=as.factor(year), y=Emissions, fill=type)) + 
+    geom_bar(stat = "identity") +  #sum values by year
+    theme_bw() +  #minimal theme
+    facet_grid(. ~ type)
+
+#point version
+ggplot(data = BALTIMORE) + 
+    geom_point(aes(x=as.factor(year), y=Emissions, color=type)) +
+    facet_grid(. ~ type)
+
+#line version
+ggplot(data = BALTIMORE, aes(x=as.factor(year), y=Emissions, color=type, group=1)) + 
+    geom_point(stat = "summary", fun.y=sum) +
+    stat_summary(fun.y=sum,geom="line") +
+    facet_grid(. ~ type)
+
+```
+
+###4. Across the United States, how have emissions from coal combustion-related sources changed from 1999-2008
+Answer: Total Emissions for Coal Combusion across U.S. have decreased during the given timeframe from about 550k tons to 330k tons.
+```{r Q4, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+
+# First subset data to coal combustion data
+# The SCC.Level.# columns go from generic to specific.  I assume that coal combustion related sources are those where:
+#     (SCC.Level.One OR SCC.Level.Two contains the substring 'combustion') AND (SCC.Level.Four contains the substring 'coal')
+
+isCombustion <- grepl("combustion", ALL$SCC.Level.One, ignore.case = TRUE) | grepl("combustion", ALL$SCC.Level.Two, ignore.case = TRUE)
+isCoal <- grepl("coal", ALL$SCC.Level.Four, ignore.case = TRUE)
+isCoalCombustion <- (isCombustion & isCoal)
+
+COAL <- ALL[isCoalCombustion,c("SCC","year","Emissions","SCC.Level.One","SCC.Level.Two","SCC.Level.Three","SCC.Level.Four","Usage.Notes")]
+str(COAL)
+
+
+# aggregate(COAL$Emissions, by=list(COAL$year), FUN=sum)
+
+ggplot(data = COAL, aes(x = year, y = Emissions)) + 
+    stat_summary(fun.y=sum,geom="line") +
+    coord_cartesian() +
+    theme_bw() +
+    labs(x = "Year", y = "Total Emissions (tons)") +
+    ggtitle("PM2.5 Coal Combustion Emissions Across US for 1999-2008")
+```
+
+###5. How have emissions from motor vehicle sources changed from 1999-2008 in **Baltimore City**? 
+
+Answer: Emissions decreased sharply from 1999-2002 (400 to 190), stayed rather flat from 2002-2005, then dropped again from 2005-2008 (180 to 135)
+```{r Q5, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+# explore columns to find which ones indicate motor vehicle 
+colNames <- c("SCC.Level.One","SCC.Level.Two","SCC.Level.Three","SCC.Level.Four","Usage.Notes")
+for (col in colNames){
+    print(paste0("## checking [",col,"] ##"))
+    print(levels(as.factor(grep(x=ALL[[col]], pattern = "motor | vehicle", ignore.case = TRUE, value = TRUE))))
+}
+
+#Based on findings, subset of data will be done by searching for 'vehicle' in SCC.Level.Two (highest level) where location is Baltimore City, Maryland (`fips == "24510"`)
+ALL$isVehicle <- grepl("motor | vehicle", ALL$SCC.Level.Two, ignore.case = TRUE)
+outColumns <- c("SCC","year","fips","Emissions","SCC.Level.One","SCC.Level.Two","SCC.Level.Three","SCC.Level.Four","Usage.Notes")
+BVEHICLES <- ALL[ (ALL$fips == "24510") & (ALL$isVehicle), outColumns] 
+str(BVEHICLES)
+
+#Plot the changes over the time period.  two approaches to the same result
+ggplot(data = BVEHICLES, aes(x = year, y = Emissions)) + 
+    stat_summary(fun.y=sum,geom="line") +
+    coord_cartesian() +
+    theme_bw() +
+    labs(x = "Year", y = "Total Emissions (tons)") +
+    ggtitle("PM2.5 Coal Combustion Emissions in Baltimore City, MD for 1999-2008")
+
+ggplot(data = ALL[(ALL$fips == "24510") & (ALL$isVehicle),], aes(x = year, y = Emissions)) + 
+    stat_summary(fun.y=sum, geom="line") +
+    theme_bw() +
+    labs(x = "Year", y = "Total Emissions (tons)") +
+    ggtitle("PM2.5 Vehicle Emissions in Baltimore City, MD for 1999-2008")
+
+#validate the graph with raw data
+# aggregate(BVEHICLES$Emissions, by=list(BVEHICLES$year), FUN=sum)
+
+```
+
+
+###6. Compare emissions from motor vehicle sources in Baltimore City (`fips == "24510"`) with emissions from motor vehicle sources in **Los Angeles County**, California (`fips == "06037"`). Which city has seen greater changes over time in motor vehicle emissions?
+
+Answer: Los Angeles has seen greater changes over time, going from 6000 to 7000 and then back down to 6500.  Los angeles emisions have consitently been significantly higher than Baltimore.  Baltimore's Emissions have been relativley more stable and slowly decreased
+```{r Q6, cache=TRUE, cache.path="cache/",fig.path="files/",collapse=TRUE}
+
+# explore columns to find which ones indicate motor vehicle 
+colNames <- c("SCC.Level.One","SCC.Level.Two","SCC.Level.Three","SCC.Level.Four","Usage.Notes")
+for (col in colNames){
+    print(paste0("## checking [",col,"] ##"))
+    print(levels(as.factor(grep(x=ALL[[col]], pattern = "motor | vehicle", ignore.case = TRUE, value = TRUE))))
+}
+?with
+#Based on findings, subset of data for vehicles will be done by searching for 'vehicle' in SCC.Level.Two (highest level) 
+ALL$isVehicle <- grepl("motor | vehicle", ALL$SCC.Level.Two, ignore.case = TRUE)
+outColumns <- c("SCC","year","fips","Emissions","SCC.Level.One","SCC.Level.Two","SCC.Level.Three","SCC.Level.Four","Usage.Notes")
+BVEHICLES <- ALL[ (ALL$fips %in% c("06037","24510")) & (ALL$isVehicle), outColumns] 
+str(BVEHICLES)
+
+#http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+
+#subset data when providing it to ggplot
+ggplot(data = ALL[(ALL$fips %in% c("06037","24510")) & (ALL$isVehicle),] ) +  
+    #map aes, sum data, specify line
+    stat_summary( mapping = aes(x = year, y = Emissions, color=fips), fun.y=sum, geom="line" ) +    
+    #modify legend labels http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+    scale_color_discrete(name="Location", breaks = c("06037","24510"), labels = c("Los Angeles, CA","Baltimore City, MD")) +    
+    theme_bw() +
+    labs(x = "Year", y = "Emissions (tons)") +
+    ggtitle("PM2.5 Total Vehicle Emissions")
+
+```
+
+
+

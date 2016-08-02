@@ -1,0 +1,51 @@
+---
+title: "Confidence Interval Notes"
+author: "Erik Cornelsen"
+date: "March 4, 2016"
+output: html_document
+---
+confidence interval = Est +/- qnorm * StdError(Est)
+    Est = some estimated value (such as a sample mean) with a standard error
+    qnorm =  a specified quantile from a normal distribution
+    
+Z Conf Interval  = Est +/- Zstat * StdError(Est)
+    Zstat=(X'-mu)/(sigma/sqrt(n)) 
+    also follow a normal distribution and has a known vairance of 0 and 1
+    StdErr = s/sqrt(n)
+    
+T Conf Interval = Est +/- Tstat(t_df) * StdError(Est)  >>>  X' +/- t_(n-1)*s/sqrt(n)
+    t_df=(X'-mu)/(s/sqrt(n)) 
+    StdErr = s/sqrt(n)
+    where s = standard deviation
+    the t statistic is independent of the population mean and variance. Instead it depends on the sample size n
+    uses StdDev for StdErr
+    used degrees of freedom (df) instead of mean and variance
+    
+#show 4 different calls to t.test
+#display as 4 long array
+rbind(
+  mn + c(-1, 1) * qt(.975, n-1) * s / sqrt(n),
+  difference <- g2vector - g1vector
+  as.vector(t.test(difference)$conf.int),
+  as.vector(t.test(g2, g1, paired = TRUE)$conf.int),
+  as.vector(t.test(extra ~ I(relevel(group, 2)), paired = TRUE, data = sleep)$conf.int)
+)
+
+
+Confidence Interval for 2 Groups, Equal Variances
+    single basic: Est +/- Tstat(t_df) * StdError(Est) 
+    Est = X1' - X2'
+    t_df = t_(.975,n_x+n_y-2) = We lose one degree of freedom from each group so we add the two sizes and subtract two.
+    StdError(Est) = sample pooled variance = sqrt(spv/n)
+        spv = (n_x-1)(S_x)^2+(n_y-1)(S_y)^2 [This weights the respective variances, those coming from bigger samples get more weight.]
+        n = (n_x-1)+(n_y-1)
+    OR MORE SIMPLY: t.test(list1,list2,paired=FALSE,var.equal=TRUE)$conf)    
+    
+    
+Confidence Interval for 2 Groups, UN-Equal Variances
+    md +/- Tstat(t_df) * StdError(Est)
+    md = difference between sample means (Y'-X')
+    t_df = [(s_x^2/n_x) + (s_y^2/n_y)] / [ ((s_x^4/n_x^2)/(n_x-1)) + ((s_y^4/n_y^2)/(n_y-1))]
+    SE = sqrt((s_x)^2/n_x + (s_y)^2/n_y)
+    SIMPLIFIED: use t.test with var.equal=FALSE
+    

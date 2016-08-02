@@ -1,0 +1,84 @@
+---
+title: "Module-11-12-13"
+author: "Erik Cornelsen"
+date: "March 7, 2016"
+output: html_document
+---
+
+### MODULE 11 - POWER
+Type 1 Error = H0 is true, we say it's false.  BAD
+Type 2 Error = H0 is false, we say it's true. BAD
+POWER = H0 is false, we say it's false.  GOOD THING!
+Power = 1-Beta
+    B = probability of a type2 Error
+    
+General Rules
+    alpha up > Power Up
+    n up > Power Up
+    mu1 further from mu0 > Power Up
+    1 Sided Test Power > 2 sided Test Power
+    
+    
+    
+Power for Gaussian Data
+    H_0: X' ~ N(mu_0, sig^2/n)
+    H_a: X' ~ N(mu_a, sig^2/n)
+    z <- qnorm(1-alpha)
+    pnorm(mu0 + z * sigma/sqrt(n), mean=mua, sd=sigma/sqrt(n), lower.tail=FALSE)
+    
+power.t.test()
+    depends on (mua - mu0)/sigma 
+    depends on n, delta, sd, power.  If have 3 can solve for the 4th.
+    power.t.test(n=16, delta=2, sd=4, type="one.sample", alt="one.sided")$power
+    power.t.test(power=0.8, delta=2, sd=4, type="one.sample", alt="one.sided")$n
+    
+### MODULE 12 - Multipe Comparisons
+*Possible outcomes for Testing hypothesis that paramater B=0.
+True State >>   B=0     B!=0    Hypotheses  
+Claim B=0       U       T**     m-R   
+Claim B!=0      V*      S       R
+Claims          m_0     m-m_0   m
+*Type I Error = false positive = V
+**Type II Error = false negative = T
+
+Error Rates:
+    false positive rate = E[V/m_0]
+        the rate at which false results (B=0) are called significant
+        AvgFalsePositives / TotalNotSignificant
+    Family Wise Error Rate (FWER) = Pr(V>=1) 
+        probablity of at least one false positive
+        V counts the times when we claim theres no relationship but there actually is
+    False discovery Rate (FDR) = E[v/R]
+        rate at which claims of significance are false
+
+Controlling the false Positive Rate:
+    FWRR >> Bonferroni correction 
+        calculate P values normally 
+        set alpha(fwer) = alpha / m
+
+
+### Module 13 - Resampling / Bootstrapping / Permutation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

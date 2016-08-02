@@ -1,5 +1,5 @@
 # R Project Files
-.Rproj
+*.Rproj
 
 # History files
 .Rhistory
@@ -13,6 +13,8 @@
 
 # RStudio files
 .Rproj.user/
+.Rproj.user
+*.Rproj.user
 
 # produced vignettes
 vignettes/*.html
@@ -23,8 +25,7 @@ vignettes/*.pdf
 
 # Misc
 .DS_Store
-ARCHIVE/
-quizes/
-cache/
-files/
-.Rproj.user
+**/ARCHIVE/
+**/quizes/
+**/cache/
+**/files/

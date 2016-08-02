@@ -1,0 +1,149 @@
+---
+title: "7-RegresssionModels-Notes"
+author: "Erik Cornelsen"
+date: "March 30, 2016"
+output: html_document
+header-includes: \usepackage{graphicx} \usepackage{color} \usepackage{mathtools}
+
+---
+
+Regression models are the workhorse of data science. They are the most well described, practical and theoretically understood models in statistics. A data scientist well versed in regression models will be able to solve an incredible array of problems.
+
+Perhaps the key insight for regression models is that they produce highly interpretable model fits. This is unlike machine learning algorithms, which often sacrifice interpretability for improved prediction performance or automation. These are, of course, valuable attributes in their own rights. However, the benefit of simplicity, parsimony and intrepretability offered by regression models (and their close generalizations) should make them a first tool of choice for any practical problem.
+
+# Week 1
+##Basic Least Squares
+    1. Center the data - set the origin to be the center/mean of the data 
+        subtract the mean from every observation.  Results in mu=0.
+    2. calcluate the slope 'beta' using lm
+    3. set the origin back to 0
+        add means back to values
+    4. use the means as a center point and draw a line with the slope we found (beta)
+    
+
+##Terminology
+Centering the data - set the origin to be the center/mean of the data 
+    subtract the mean from every observation.  Results in mu=0.
+Scaling the data
+    divide every observation by the standard deviation.  Results in SD=1.
+Normalizing the data
+    first center the data, then scale the data.
+    is an attempt to make data sets compareable that originally were not compareable. 
+    results in slope=correlation. results in mean=0 and variance=1
+emperical covariance
+correlation
+    standardized covariance
+    measures the strenght of relationship between the X and Y data. between -1,1. 0=no correlation. -1 or 1 = high correlation
+
+
+##Linear Least Squares
+    has same slope if you center the data and did regression through the origin
+    
+Ordinary least squares (OLS) is the workhorse of statistics. It gives a way of taking complicated outcomes and explaining behavior (such as trends) using linearity. The simplest application of OLS is fitting a line through some data. In the next few lectures, we cover the basics of linear least squares.
+
+
+# Week 2
+## Statistical Linear Regression Models
+
+Estimation is useful, but we also need to know how to extend our estimates to a population. This is the process of statistical inference. Our approach to statistical inference will be through a statistical model. At the bare minimum, we need a few distributional assumptions on the errors. However, we’ll focus on full model assumptions under Gaussianity
+
+Yi = B0 + B1*Xi+Ei
+	B - slope
+	E - iid gausian errors
+
+###Basic use of lm regression. where x=0
+fit<-lm( outcome(Y)~(X), data=data)
+coef(fit)
+	1. intercept=expected value of Y when x is 0
+	2. slope of line.  for every increase of X+1, how much change in Y.
+	
+	
+###Mean center the X variable if you don't care about x=0 value (ie 0 carat diamond)
+fit2<-lm( outcome(Y)~I(X-mean(X)), data=data)
+coef(fit2)
+	1. intercept = gives average expected value of Y for the average value of X
+
+###If want to change the scale of X, below will 'zoom in' by factor of 10.
+fit<-lm( Y~I(X*10)), data=data)
+coef(fit)
+	1. intercept = gives average expected value of Y for the average value of X
+
+
+###To PREDICT a value of Y for a specified value of X
+newx<- c(.16, .27, .34)
+Manual:	coef(fit)[1] + coef(fit)[2] * newx
+Auto: 	predict(fit, newdata = data.frame(Xcol=newx))
+will give you the expected values for Y given the inputed X values for the regression line previously discovered by 'fit'
+
+##Residuals
+Residuals represent variation left unexplained by our model (our model accounts for variables A and B, but there's something else affecting the data that we're not accounting for).
+	Errors = the unobservable true errors from the known coefficients
+	Residuals = the observable errors from the estimated coefficients. In a sense, the residuals are estimates of the errors.
+
+* useful for diagnosing poor model fit
+* graph of residual varaince can diagnose things that would otherwise be missed.
+* after fit a line to the data, residual is the y ammount above or below the line for the data points
+
+##Infereance in Regression
+Prediction.
+fit<-lm(y~x)
+predict(fit, newdata=newx, interval="Confidence")
+    interval confidence = i want INTERVAL around the estimated line for a particular value of x
+    interval predict = i want Y-VALUE around the estimated line for a particular value of x
+    
+* confidence interval is narrower than prediction interval
+
+# Week 3
+## Multivariable Regression
+```{r}
+require(datasets);data(swiss);require(GGally);require(ggplot2);
+ggpairs(swiss,lower=list(continuous="smooth"),params=c(method="loess"))
+summary(lm(Fertility~.,data=swiss))$coefficients
+summary(lm(Fertility~Agriculture,data=swiss))$coefficients
+```
+
+
+```{r}
+#NOTE: when you perform this kind of test on [factor] variables (like spray) it compares each mean/Estimate to the first one.  So 'Intercept'==SprayA and all the other spray Estimates are RELATIVE to SprayA!
+require(datasets);
+ggplot(data=InsectSprays,aes(y=count,x=spray,fill=spray))+geom_violin(color="black",size=2)
+summary(lm(count~spray, data=InsectSprays))$coef
+#               Estimate Std. Error    t value     Pr(>|t|)
+#(Intercept)  14.5000000   1.132156 12.8074279 1.470512e-19
+#sprayB        0.8333333   1.601110  0.5204724 6.044761e-01   B's mean is .8 higher than A's mean
+#sprayC      -12.4166667   1.601110 -7.7550382 7.266893e-11   C's mean is -12.4 lower than A's mean
+#sprayD       -9.5833333   1.601110 -5.9854322 9.816910e-08
+#sprayE      -11.0000000   1.601110 -6.8702352 2.753922e-09
+#sprayF        2.1666667   1.601110  1.3532281 1.805998e-01
+
+#compare to the manual calculation of means
+library(dplyr)
+summarise(group_by(InsectSprays, spray), mn=mean(count))
+```
+
+Choose a different reference level.
+```{r}
+spray2 <- relevel(InsectSprays$spray, "C")
+summary(lm(count~spray2, data=InsectSprays))$coef
+```
+
+
+
+Adjustment, is the idea of putting regressors into a linear model to investigate the role of a third variable on the relationship between another two. Since it is often the case that a third variable can distort, or confound if you will, the relationship between two others.
+
+As an example, consider looking at lung cancer rates and breath mint usage. For the sake of completeness, imagine if you were looking at forced expiratory volume (a measure of lung function) and breath mint usage. If you found a statistically significant regression relationship, it wouldn’t be wise to rush off to the newspapers with the headline “Breath mint usage causes shortness of breath!”, for a variety of reasons. First off, even if the association is sound, you don’t know that it’s causal. But, more importantly in this case, the likely culprit is smoking habits. Smoking rates are likely related to both breath mint usage rates and lung function. How would you defend your finding against the accusation that it’s just variability in smoking habits?
+
+If your finding held up among non-smokers and smokers analyzed separately, then you might have something. In other words, people wouldn’t even begin to believe this finding unless it held up while holding smoking status constant. That is the idea of adding a regression variable into a model as adjustment. The coefficient of interest is interpreted as the effect of the predictor on the response, holding the adjustment variable constant.
+
+##Residuals & Diagnostics
+```{r}
+data(swiss); ?swiss;
+fit <- lm(Fertility ~ ., data=swiss)
+par(mfrow=c(2,2)); plot(fit)
+```
+
+* leverage - like a fulcrum, a data point far away from center of data has the potential to have great influence on the data (if it chooses to)
+* influential points - datapoint that has great leverage and actually does influence the model
+* outlier points - 
+    - spurious or real?
+    - ```?influence.measures``` -> gives lots of available measures

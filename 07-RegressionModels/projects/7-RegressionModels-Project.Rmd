@@ -1,0 +1,138 @@
+---
+title: "Regression Models: Motor Trend Analysis"
+#subtitle: "What transmission type is better for MPG?"
+#author: "Erik Cornelsen"
+#date: \today{}
+output:
+  pdf_document:
+    fig_caption: yes
+#    toc: no
+#    toc_depth: 4
+  html_document:
+    fig_caption: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+#http://rmarkdown.rstudio.com/pdf_document_format.html
+#https://www.sharelatex.com/learn/Page_size_and_margins
+#font: Ariel
+fontsize: 8pt
+geometry: tmargin=0.5in, bmargin=0.5in #throws off images lmargin=0.5in, rmargin=0.5in, 
+papersize: legalpaper
+setspace: single
+
+---
+# Executive Summary
+Motor Trend, a magazine about the automobile industry, is interested in exploring the relationship between the transmission type and miles per gallon (MPG). They are particularly interested in the following two questions:
+
+1. “Is an automatic or manual transmission better for MPG”
+1. "Quantify the MPG difference between automatic and manual transmissions"
+
+Based on the analysis below we found that the mean for automatic transmission is 17.15 mpg and manual transmission is 24.39 mpg. Our model also shows that a manual transmission has a greater positive effect on MPG than an automatic transmission. 
+
+# Exploratory Analysis
+The data comes from the  Motor Trend Car Road Tests (`mtcars`) dataset with 32 cars and the following 11 attributes:
+
+1. mpg	 = Miles/(US) gallon
+1. cyl	 = Number of cylinders
+1. disp	 = Displacement (cu.in.)
+1. hp	 = Gross horsepower
+1. drat	 = Rear axle ratio
+1. wt	 = Weight (lb/1000)
+1. qsec	 = 1/4 mile time
+1. vs	 = V/S
+1. am	 = Transmission (0 = automatic, 1 = manual)
+1. gear	 = Number of forward gears
+1. carb	 = Number of carburetors
+
+```{r echo=FALSE}
+#several attributes should be treated as factors
+library(datasets); data(mtcars); #?mtcars;
+mtcars$cyl <- factor(mtcars$cyl, labels=c("4cyl","6cyl","8cyl"))
+mtcars$vs <- factor(mtcars$vs)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+mtcars$am <- factor(mtcars$am, labels=c("Automatic","Manual"))
+#str(mtcars)
+```
+
+An initial boxplot comparing MPG and Transmission Type **(see Appendix Plot 1)** would seem to indicate an immediate relationship that manual transmissions get better MPG than Automatic.  
+
+When we perform a t-test of mpg for each transmission type the output confirms that this difference is statistically significant (p-value < 0.05).  However we need to look at the rest of the attributes to see if there are any other variables we should include in the model.
+```{r results='hold'}
+t.test(mpg ~ am, data = mtcars) 
+```
+
+When we run a scatter plot matrix **(see Appendix Plot 2)** across all attributes we see that there are several that should be investigated.
+
+# Regression Analysis
+## Model Generation & Comparison
+We will explore linear regression models based on the different variables.  We need to build and compare multiple models to see which one is the best fit:
+
+1. First we build an initial model with all of the variables as predictors.
+1. Next we perform stepwise model selection to identify the significant predictors.  We use the `step()` function which runs `lm` multiple times with different variables to build multiple regression models and select the best one.  It uses both *forward selection* and *backward elimination* methods of the *AIC* algorithm. AIC is a goodness of fit measure that favours smaller residual error in the model, but penalises for including further predictors and helps avoiding overfitting.  The results of `step()` shows that the best model contains the variables `cyl`, `wt`, `hp`, and **`am`** as most relevant.  The *adjusted R-squared* value of 0.84 indicates that 84% of the variability/uncertianty is explained by this 
+1. Finally, we compare the candidate models ANOVA output and Adjusted R-Squared values to verify which model is *best*.  The results show that the fit_best model has better p-value and adj.r.squared values.
+    
+```{r echo=TRUE, results='hold', warning=FALSE} 
+#build multiple models
+fit_all <- lm(mpg ~ ., data = mtcars)                   #model with ALL variables
+fit_am <- lm(mpg ~ am, data = mtcars)                   #model with just mpg and transmission(am)
+fit_best <- step(fit_all, direction = "both", trace=0)  #model generated from step() and chosen as 'best fit'
+fit_best2 <- lm(mpg ~ cyl+hp+wt+am, data = mtcars)      #FYI, generating the 'best fit' model manually gives the same results
+
+#ANOVA compares multiple models and suggests the best fit model using sinificance codes and p-values
+anova(fit_all, fit_am, fit_best)
+
+# Adjusted R-Squared tells us how confident we are in the result.
+#attributes(summary(fit_all))
+summary(fit_all)$adj.r.squared
+summary(fit_am)$adj.r.squared
+summary(fit_best)$adj.r.squared
+```
+
+## Residuals & Diagnostic Analysis
+Lets look and see if we have any outliers in our data sets with high leverage or influence.  After analyzing the residuals plots **(See Appendix Plot 3)** we find the following:
+
+1. Residuals vs Fitted plot = points appear random, without any obvious pattern, which seems to verify the independence condition.
+1. Normal Q-Q plot = the points mostly fall on the line (using the pencil test) indicating that the residuals are normally distributed.
+1. Scale-Location plot = the points are in a constant band pattern, indicating constant variance.
+1. Residuals vs Leverage plot = shows some outliers or leverage points are on the top and right edges
+
+We can use a couple of diagnostics to isolate and identify the leverage points.
+```{r results='hold'}
+#hatvalues helps us identify the points with potential leverage
+lev_best <- hatvalues(fit_best)
+tail(sort(lev_best), 3)
+
+#dfbetas helps us identify the points with influence (points that are using their leverage)
+inf_best <- dfbetas(fit_best)
+tail(sort(inf_best[, 6]), 3)
+```
+
+# Conclusions
+Based on the 'fit_best' model we conclude that:
+
+1. MPG will **increase** by 1.81 for cars with **Manual** transmissions.
+1. MPG will decrease by 2.5 for every 1000 lb of increase in wt 
+1. MPG will decrease for 6cyl (by 3.03) and 8cyl (by 2.16) cars
+1. MPG will decrease by .03 for each horsepower added.
+
+# Appendix / Plots
+```{r echo=FALSE}
+boxplot(mpg ~ am, data = mtcars
+        , col = "blue"
+        , main = "Plot 1: Miles per gallon by Transmission type"
+        , xlab = "Transmission type", ylab = "Miles Per Gallon")
+```
+```{r echo=FALSE, warning=FALSE}
+library(car)
+scatterplotMatrix(~mpg + cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb, data = mtcars
+                  , main = "Plot 2: Scatter Plot for mtcars Data")
+#pairs(~mpg+am+disp+wt,data=mtcars, main="Simple Scatterplot Matrix")
+#http://www.statmethods.net/graphs/scatterplot.html
+
+```
+```{r echo=FALSE}
+plot(fit_best, main="Plot 3: Residuals")
+```
+

@@ -21,3 +21,8 @@ building models -> dramatically increase complexity
     'Practical Data Science with R' by Manning
 
 
+Look At WHat these guys did
+https://rpubs.com/gwbatten/portfolio2
+https://rpubs.com/HsinYu_Cheng/Data_Science_Specialization
+
+

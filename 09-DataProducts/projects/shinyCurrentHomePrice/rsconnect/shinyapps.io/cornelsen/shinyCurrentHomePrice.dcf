@@ -1,0 +1,9 @@
+name: shinyCurrentHomePrice
+account: cornelsen
+server: shinyapps.io
+appId: 114317
+bundleId: 504392
+url: https://cornelsen.shinyapps.io/shinyCurrentHomePrice/
+when: 1468467287.0663
+asMultiple: FALSE
+asStatic: FALSE

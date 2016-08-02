@@ -1,0 +1,95 @@
+---
+title: "ML Notes Wk4"
+author: "Erik Cornelsen"
+date: "June 13, 2016"
+output: html_document
+---
+
+
+# 4.1 Regularized Regression
+(didn't get this one to well)
+
+Basic Idea
+
+    1. Fit a regression model
+    1. penalize (or shrink) large coefficients
+        1. if two coefficents are highly correlated, leave one of them out
+        1. is a tradeoff between bias and variance
+
+PROS: helps with bias/variance tradeoff. helps with model selection.
+CONS: computationaly demanding on large data sets. does not perform as well as random forests and boosting
+
+Example: https://github.com/bcaffo/courses/blob/master/08_PracticalMachineLearning/024regularizedRegression/index.Rmd
+
+ISSUE: As you include more variables in the model 
+            >> *Training* Set always improves
+            >> *Testing* Set improves; then plateus; then worsens
+SOLUTION: Model Selection Approach (when have enough compute available)
+
+    1. Divide data into Training/Test/Validation
+    1. Treat Validation as Test data, train all competing models on the Train data and pick the best one on Validation.
+    1. To appropriatly asses performance on new data, apply to Test set
+    1. You may re-split and re-perform stepst 1-3
+    
+Common Probs: Limited data. Compute intensive.
+
+ISSUE: With lots of predictors and not enough samples you end up getting coeficent values of NA
+SOLUTIONS: 
+    * Hard thresholding 
+    * Regularization for Regression
+    * Ridge regression
+    * Lasso
+    
+Caret Methods are: 'ridge', 'lasso', 'relaxo'
+
+
+# 4.2 Combining Predictors (ensambling methods)
+
+Key Ideas
+    * classifer = a model to classify (like decision tree)
+    * you can combine classifiers by averaging/voting
+    * combining classifiers improves accuracy
+    * combining classifiers reduces interpertability
+    * boosting, bagging, and random forests are varients on this theme
+
+Basic Intuition - majority vote of multiple separate classifiers will give a better prediction than a single classifier.
+
+Approaches to combine classifers
+    1. Combine similar Classifiers (bagging, boosting, random forests)
+    1. combine different classifiers (model stacking, model ensembling)
+
+Typical model for binary/multiclass data
+    1. build an odd number of models
+    1. predict with each model
+    1. predict the final class by majority vote of the models
+
+# 4.3 Forecasting
+time sensitive prediction problem
+
+    * data is dependent over time
+    * Patterns to look for
+        * long term trends
+        * seasonal patterns
+        * cycles
+    * subsampling into training/test is harder
+    * similar issues in spatial data
+        * dependency between nearby observations
+        * location specific events
+    * goal is to predict one or more observations in the future
+    * standard predictions can be used WITH CAUTION
+    * Be careful of extrapolation out to far
+    * be careful of correlations that might not make sense
+
+Approaches:
+
+    * Simple Moving Average - avg all values for particular time point
+    * Exponential Smoothing - weight nearby timepoints more heavily than those further away
+
+# 4.4 Unsupervised Prediction
+Sometimes don't know the labels for prediction
+To Build a predictor
+    * Create clusters
+    * name clusters
+    * build predictor for clusters
+In new data set
+    * predict clusters

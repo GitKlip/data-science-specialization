@@ -1,0 +1,30 @@
+Course Project Prediction Quiz
+15/20 points earned (75%).You haven't passed yet. You need at least 80% to pass.
+
+
+
+1. A Incorrect Response XXX
+2. A Correct Response
+3. A Incorrect Response XXX
+4. A Correct Response
+5. A Correct Response
+6. D Incorrect Response XXX
+7. D Correct Response
+8. B Correct Response
+9. A Correct Response
+10. A Correct Response
+11. B Correct Response
+12. A Incorrect Response XXX
+13. B Correct Response
+14. A Correct Response
+15. D Incorrect Response XXX
+16. E Correct Response
+17. A Correct Response
+18. B Correct Response
+19. B Correct Response
+20. B Correct Response
+
+OLD: A A A A A D D B A A B A B A D E A B B B
+
+
+NEW: B A B A A E D B A A B C B A E E A B B B  >>> ALL CORRECT

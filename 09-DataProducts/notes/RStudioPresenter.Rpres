@@ -1,0 +1,64 @@
+RStudioPresenter
+========================================================
+author: Erik
+date: july 6 2016
+
+
+
+Intro Slide
+========================================================
+* RStudio Presentor = Authoring tool for reproducible presentations, like slidify
+* Main Link: http://www.rstuido.com/ide/docs/presentations/overview
+
+file > New File > R Presentation
+
+https://support.rstudio.com/hc/en-us/articles/200714013-Slide-Transitions-and-Navigation
+
+
+
+Slidify vs RStudio Presenter
+========================================================
+
+Slidify
+  * flexible control from the R MD file
+  * Under rapid ongoing developement
+  * Large user base
+  * lots of styles and options
+  * steeper learning curve
+  * More command line oriented
+  
+***
+RStudio Presenter
+  * Embeded in RStudio
+  * More GUI Oriented
+  * Very easy to get started
+  * Smaller set of easy styles
+  * defaults look nice
+  * ultimatly as flexible as slidify  with little CSS and html knowledge
+
+
+
+First Slide
+========================================================
+
+For more details on authoring R presentations click the
+**Help** button on the toolbar.
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+Slide With Code
+========================================================
+transition:rotate
+
+```{r}
+summary(cars)
+```
+
+Slide With Plot
+========================================================
+
+```{r, echo=FALSE}
+plot(cars)
+```

@@ -1,0 +1,131 @@
+---
+title: "ML Notes Wk1"
+author: "Erik Cornelsen"
+date: "May 31, 2016"
+output: html_document
+---
+
+# ML Steps / Components of building a ML algorithm
+Question >> Input Data >> Features >> Algorithm >> Paramaters >> Evaluation
+
+    * Questions, Data, Features often more important than Algorithm 
+    * Garbage IN = Garbage OUT
+        * often more data gives better models
+        * Collect the right data for the question you want to answer
+    * Good Feaures: 
+        * Lead to data compression, 
+        * retain relevant info, 
+        * based on expert knowledge
+    * Feature Mistakes: 
+        * automating feature selection (can be done with care)
+        * ignoring data specific quirks, 
+        * throwing away info unnecessarily
+    * 'BEST' Algorithm:
+        * matters less than you think.  ex. linear disc analysis often only slightly worse than custom algorithms.
+        * Interpretable
+        * Simple
+        * Accurate
+        * Fast (to train and test)
+        * Scalable
+
+# Prediction Study Design
+
+    1. Define your error rate
+    1. Split data into: Training, Testing, Validation(optional)
+    1. On Training set, pick features (use cross validation)
+    1. On Training set, pick prediction function (use cross validation)
+    1. ?Have Validation set?
+        1. NO: apply 1x to Test set
+        1. YES: apply to test set and refine, then apply 1x to Validation set 
+
+Notes:
+
+    * know the benchmarks of other models.  If way better or way worse, then you might be doing something wrong.
+    * Avoid small sample/Test Set sizes (even though you're splitting data to multiple sub-sets)
+        * If Large Data:    60% Train, 20% Test, 20% Validation
+        * If Medium Data:   60% Train, 40% Test
+        * If Small Data:    Do Cross Validation (report caveat of small sample size)
+    * Test/Validation set should be set aside and not looked at
+    * random sample Train & Test sets
+    * Data Sets must reflect nature of the problem (backtesting)
+    * Data sets should have diversity (random assignment, balance by features)
+    
+Error Types
+
+    * Test Type         >   Pr( predictedValue | reality )  
+    * Sensitivity       >   Pr( positiveTest | disease )        > TP/(TP+FN)
+    * Specificity       >   Pr( negativeTest | noDisease )      > TN/(FP+TN)
+    * Pos Pred Value    >   Pr( disease | positiveTest )        > TP/(TP+FP)
+    * Neg Pred. Value   >   Pr( noDisease | negativeTest )      > TN/(FN+TN)
+    * Accuracy          >   Pr( correctOutcome )                > (TP+TN)/(TP+FP+FN+TN)
+
+
+
+# ROC Curves
+
+    * **Receiver Operating Characteristic** curves, 
+    * measures the goodness of a prediction algorithm
+    * Tells you about the tradeoffs of an algorithm between Sensitivity and Specificity (or FP and TP)
+    * higher area under curve (AUC) means better prediction
+        * AUC of .5 is random guessing
+        * AUC of 1 is perfect classifier (shouldn't happen)
+        * AUC >= .8 is generally considered 'good'
+
+
+# Cross Validation
+CV is a tool to detect relevant features and building models
+
+    * Approach:
+        * Use the Train set
+        * split it into Train/Test set
+        * build a model on the Train set
+        * evaluate on the Test set
+        * repeat and average the estimated errors
+    * Used For:
+        * picking vars to include in a model
+        * picking the type of prediction function to use
+        * picking the paramaters on the prediction function
+        * comparing different predictors
+    * Approaches to data splitting:
+        * Random Subsampling
+            * must be done WITHOUT REPLACEMENT
+        * K-fold
+            * larger k = less bias, more variance
+            * smaller k = more bias, less variance
+        * Leave One Out
+    * Considerations
+        * for time series data, the data must be in 'chunks'
+
+
+# Data to Use
+
+    * like predicting like - if want to predict X, use data that's closely related to X (historic?)
+    * Data properties matter
+    * unrelated data is the most common mistake
+    * 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

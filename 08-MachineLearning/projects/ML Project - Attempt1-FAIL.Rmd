@@ -1,0 +1,374 @@
+---
+title: "ML Project"
+author: "Erik Cornelsen"
+date: "June 19, 2016"
+output: html_document
+---
+
+```{r exploration}
+df<-traindata
+dim(df)
+sum(complete.cases(df))
+sapply(df,FUN=function(x) sum(is.na(x))) #count nulls per col
+str(df, list.len=length(df))#check structure
+#when import account for NA's
+table(trn2$new_window)
+
+#For "nb" Choose to do CV=3.  Even though we have 19k obs, multiple obs are really one rep.  so with 6 people, across 20 days doing X actual reps total, it dosn't seem like a lot of actual observations.  therefore, there's  a need to cross validate.
+#For "rf" chose not to do CV because it lead to overfitting of the model
+```
+
+```{r helperFunctions}
+library(caret)
+set.seed(325)
+
+getURLData <- function(srcFileUrl, destFileName) {
+    if(!file.exists("pml-training.csv")){
+        download.file(url = srcFileUrl, destfile = destFileName, mode="wb")
+    }  
+    data <- read.table( file=destFileName, sep=",", header=TRUE,       stringsAsFactors=TRUE, na.strings = c("NA","","#DIV/0!",NA))
+    return(data)
+}
+##Download and Load data
+trn.all <- getURLData("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","pml-training.csv")
+inTrain <- createDataPartition(trn.all$classe, p = .75)[[1]]
+
+trn <- trn.all[ inTrain,]
+vld <- trn.all[-inTrain,]
+tst <- getURLData("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","pml-testing.csv")
+
+str(trn, list.len=length(trn))#the 'classe' is the variable classification we're trying to predict
+dim(trn)
+dim(vld)
+dim(tst)
+
+```
+
+```{r nbModel}
+#PRE-PROCESS
+myPreProcess <- function(df) {
+    #IMPUTE NA's
+    df[is.na(df)]<-0 #Would prefer to knnImpute the NA's but having errors.  So, for dead simple am choosing to set NA=0
+    #another approach: set the NA's to be the same as the new_window values if they exist.
+    
+    #PRE-PROCESS
+    #methods:zv,nzv,BoxCox/YeoJohnson/expoTrans,center,scale,range,knnImpute/bagImpute/medianImpute,pca,ica,spatialSign,conditionalX 
+    pp <- preProcess(df, method=c("conditionalX","center","zv","nzv"), outcome=df$classe, verbose=FALSE, na.remove=TRUE)
+    
+    print(pp)
+    return(pp)
+}
+pp <- myPreProcess(trn)
+
+#CREATE NEW DATASETS
+trn2 <- predict( pp , newdata=trn)
+vld2 <- predict( pp , newdata=vld)
+tst2 <- predict( pp , newdata=tst)
+
+str(trn2, list.len=length(trn2))
+str(vld2, list.len=length(vld2))
+str(tst2, list.len=length(tst2))
+
+#TRAIN the model
+#Naive Bayes tries to classify instances based on the probabilities of previously seen attributes/instances, assuming complete attribute independence. can handle missing data
+nbModel <- train(classe ~ .,method='nb', data=trn2, trControl=trainControl(method='cv',number=3)) 
+    #trainControl(method='cv',number=3) gives cross-validataion (‘cv’) with 3 folds.
+print(nbModel) #Accuracy=.876
+save(nbModel,file="nbModel.dat")
+
+#VALIDATE the Model
+nbPredict_vld <- predict(nbModel,newdata = vld2);
+confusionMatrix(vld2$classe,nbPredict_vld) #Accuracy : 0.8677
+postResample(vld2$classe,nbPredict_vld) #Accuracy=0.8676591    Cohens Kappa=0.8304188 (0=pure chance, 1=completly correct)
+save(nbPredict,file="nbPredict_vld.dat")
+  
+#PREDICT
+nbPredict <- predict(nbModel,newdata = tst2);
+save(nbPredict,file="nbPredict.dat")
+
+```
+
+```{r rfModel}
+
+#PRE-PROCESS 
+myPreProcess <- function(df) {
+    #IMPUTE NA's
+    df[is.na(df)]<-0 #Would prefer to knnImpute the NA's but having errors.  So, for dead simple am choosing to set NA=0
+    #TODO: get knnImpute or something else to work
+    #TODO: another approach could be to set the NA's to be the same as the new_window values if they exist.
+    
+    #PRE-PROCESS
+    #methods:zv,nzv,BoxCox/YeoJohnson/expoTrans,center,scale,range,knnImpute/bagImpute/medianImpute,pca,ica,spatialSign,conditionalX 
+    pp <- preProcess(df, method=c("center","zv","nzv"), outcome=df$classe, verbose=FALSE, na.remove=TRUE)
+    
+    print(pp)
+    return(pp)
+}
+pp <- myPreProcess(trn)
+
+#CREATE NEW DATASETS
+trn2 <- predict( pp , newdata=trn)
+vld2 <- predict( pp , newdata=vld)
+tst2 <- predict( pp , newdata=tst)
+
+trn2$new_window <- sapply(trn2$new_window,FUN=function(v) if(v=="no"){0} else{1})#convert new_window from factor to binary
+vld2$new_window <- sapply(vld2$new_window,FUN=function(v) if(v=="no"){0} else{1})
+tst2$new_window <- sapply(tst2$new_window,FUN=function(v) if(v=="no"){0} else{1})
+
+str(trn2, list.len=length(trn2))
+str(vld2, list.len=length(vld2))
+str(tst2, list.len=length(tst2))
+
+#TRAIN the model
+#rfModel <- train(classe ~ ., method="parRF", data=trn2, trControl=trainControl(method='cv',number=3))   #random forest
+rfModel <- train(classe ~ ., method="rf", data=trn2, trControl=trainControl(method='cv',number=3))   #random forest
+print(rfModel) #Accuracy=0.9997962
+save(rfModel,file="rfModel.dat")
+
+#VALIDATE the Model
+rfPredict_vld <- predict(rfModel,newdata = vld2);
+confusionMatrix(vld2$classe,rfPredict_vld) #Accuracy : 0.9998
+postResample(vld2$classe,rfPredict_vld) #Accuracy=0.9997961,    Kappa=0.9997421(0=pure chance, 1=completly correct)
+save(rfPredict,file="rfPredict_vld.dat")
+
+#PREDICT
+rfPredict <- predict(rfModel,newdata = tst2);
+save(rfPredict,file="rfPredict.dat")
+
+```
+
+```{r rfModelWithPCA}
+
+#PRE-PROCESS 
+myPreProcess <- function(df) {
+    #IMPUTE NA's
+    df[is.na(df)]<-0 #Would prefer to knnImpute the NA's but having errors.  So, for dead simple am choosing to set NA=0
+    #TODO: get knnImpute or something else to work
+    #TODO: another approach could be to set the NA's to be the same as the new_window values if they exist.
+    
+    #convert new_window from factor to binary so that it get's considered
+    trn2$new_window <- sapply(trn2$new_window,FUN=function(v) if(v=="no"){0} else{1})
+
+    # Principal Component ANalysis (PCA) to reduce vars/columns
+    #applies the PCA method and produces an object/model for it
+        #if 'thresh' set will find the number of components needed to cover the specified variance %
+        #if 'pcacomp' set will keep the top X components that explain the most variation
+        #Non-numeric predictors are allowed but will be ignored.
+    pp <- preProcess(df, method=c("nzv","pca"), thresh=0.95 , na.remove=FALSE, outcome=df$classe, verbose=TRUE)
+    #applies the pca object to the training data to output a new data set where PCA has been applied
+    #http://stackoverflow.com/questions/20150174/about-pca-in-r
+
+    print(pp)
+    return(pp)
+}
+pp <- myPreProcess(trn)
+
+#CREATE NEW DATASETS
+trn2 <- predict( pp , newdata=trn)
+vld2 <- predict( pp , newdata=vld)
+tst2 <- predict( pp , newdata=tst)
+
+str(trn2, list.len=length(trn2))
+str(vld2, list.len=length(vld2))
+str(tst2, list.len=length(tst2))
+
+
+#TRAIN the model
+rfPCAModel <- train(classe ~ ., method="rf", data=trn2, trControl=trainControl(method='cv',number=3))   #PCA random forest
+print(rfPCAModel) #Accuracy=0.9853241
+save(rfPCAModel,file="rfPCAModel.dat")
+
+
+#VALIDATE the Model
+rfPCAPredict_vld <- predict(rfPCAModel,newdata = vld2);
+confusionMatrix(vld2$classe,rfPCAPredict_vld) #Accuracy : .9931
+postResample(vld2$classe,rfPCAPredict_vld) #Accuracy= .99306   Cohens Kappa=.99102 (0=pure chance, 1=completly correct)
+save(rfPCAPredict,file="rfPCAPredict_vld.dat")
+
+#PREDICT
+rfPCAPredict <- predict(rfPCAModel,newdata = tst2);
+save(rfPCAPredict,file="rfPCAPredict.dat")
+
+```
+
+```{r stackedModels}
+##Concept: take the predictions from the other models, STACK the predictions together using random forests ("rf"). This trains a new model with the other models preditions. Normally the stacked predictions are better than the individuals.
+    # postResample(vld2$classe,nbPredict_vld) #Accuracy=0.8676591    Cohens Kappa=0.8304188 (0=pure chance, 1=completly correct)
+    # postResample(vld2$classe,rfPredict_vld) #Accuracy= 1   Cohens Kappa=1 (0=pure chance, 1=completly correct)
+    # postResample(vld2$classe,rfPCAPredict_vld) #Accuracy= .99306   Cohens Kappa=.99102 (0=pure chance, 1=completly correct)
+
+#CREATE DATA SETS - use the validation predictions from the models
+load("nbPredict_vld.dat")
+load("rfPredict_vld.dat")
+load("rfPCAPredict_vld.dat")
+
+trnDF <- data.frame(nb=nbPredict_vld,
+                    rf=rfPredict_vld, 
+                    rfpca=rfPCAPredict_vld,
+                    classe=vld$classe)
+
+str(trnDF)
+
+#TRAIN Stacked Model
+comboModel <- train(classe ~ ., method="rf", data=trnDF)
+comboModel #Accuracy=0.9996662, Kappa=0.9995782
+save(comboModel,file="comboModel.dat")
+
+#VALIDATE the stacked model
+#Don't have any extra data do do validations because each model had a slightly different pre-processing for data sets.  only have predictions from vld2 data sets.
+
+
+#PREDICT STACKED
+load("nbPredict.dat")
+load("rfPredict.dat")
+load("rfPCAPredict.dat") 
+
+
+```
+
+```{r}
+
+
+
+
+#I believe this is a classification problem, use a classification tree model
+#RF with PCA
+gbmFit <- train(classe ~ ., method="gbm", data=train.trnsf, verbose = FALSE)  #boosted trees
+parRFFit <- train(classe ~ ., method="parRF", data=train.trnsf)   #parallel random Forest
+wsrfFit <- train(classe ~ ., method="wsrf", data=train.trnsf)   #Weighted Subspace Random Forest
+ 
+
+
+
+
+```
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
+
+Build Model
+report describing 
+    * how you built your model
+    * how you used cross validation
+    * what you think the expected out of sample error is
+    * why you made the choices you did
+Use your prediction model to predict 20 different test cases.
+
+
+
+-------------------------------------
+#to identify the most relevant features we used the feature selection algorithm based on correlation proposed by Hall [14]. The algorithm was configured to use a “Best First” strategy based on backtracking. 17 features were selected:
+#belt
+#    mean and variance of the roll,
+#    maximum, 
+#    range and variance of the accelerometer vector,
+#    variance of the gyro and variance of the magnetometer.
+#arm
+#    variance of the accelerometer vector 
+#    maximum and minimum of the magnetometer
+#dumbbell
+#    maximum of the acceleration, 
+#    variance of the gyro  
+#    maximum and minimum of the magnetometer
+#glove
+#    sum of the pitch 
+#    maximum and minimum of the gyro
+#---INSTRUCTIONS1------------------------------------
+#Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+#Data
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+#What you should submit
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+##Peer Review Portion
+Your submission for the Peer Review portion should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-).
+
+##Course Project Prediction Quiz Portion
+
+Apply your machine learning algorithm to the 20 test cases available in the test data above and submit your predictions in appropriate format to the Course Project Prediction Quiz for automated grading.
+
+#Reproducibility
+
+Due to security concerns with the exchange of R code, your code will not be run during the evaluation by your classmates. Please be sure that if they download the repo, they will be able to view the compiled HTML version of your analysis.
+
+#---Instructions 2----------------------------------------
+#Instructions
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.
+
+#Review criterialess 
+##What you should submit
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+##Peer Review Portion
+
+Your submission for the Peer Review portion should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-).
+
+##Course Project Prediction Quiz Portion
+Apply your machine learning algorithm to the 20 test cases available in the test data above and submit your predictions in appropriate format to the Course Project Prediction Quiz for automated grading.
+
+##Reproducibility
+Due to security concerns with the exchange of R code, your code will not be run during the evaluation by your classmates. Please be sure that if they download the repo, they will be able to view the compiled HTML version of your analysis.
+
+#Prediction Assignment Writeupless 
+##Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##Data
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+
+#---Weight Lifting Exercises Dataset ------------------------------------
+On-body sensing schema
+Read more: http://groupware.les.inf.puc-rio.br/har
+
+This human activity recognition research has traditionally focused on discriminating between different activities, i.e. to predict "which" activity was performed at a specific point in time (like with the Daily Living Activities dataset above). The approach we propose for the Weight Lifting Exercises dataset is to investigate "how (well)" an activity was performed by the wearer. The "how (well)" investigation has only received little attention so far, even though it potentially provides useful information for a large variety of applications,such as sports training.
+
+In this work (see the paper) we first define quality of execution and investigate three aspects that pertain to qualitative activity recognition: the problem of specifying correct execution, the automatic and robust detection of execution mistakes, and how to provide feedback on the quality of execution to the user. We tried out an on-body sensing approach (dataset here), but also an "ambient sensing approach" (by using Microsoft Kinect - dataset still unavailable)
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
+
+Citation for WLE data set:
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Documentation: http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf
+--------------------------------------------------------
+# Cross Validation
+CV is a tool to detect relevant features and building models
+
+    * Approach:
+        * Use the Train set
+        * split it into Train/Test set
+        * build a model on the Train set
+        * evaluate on the Test set
+        * repeat and average the estimated errors
+    * Used For:
+        * picking vars to include in a model
+        * picking the type of prediction function to use
+        * picking the paramaters on the prediction function
+        * comparing different predictors
+    * Approaches to data splitting:
+        * Random Subsampling
+            * must be done WITHOUT REPLACEMENT
+        * K-fold
+            * larger k = less bias, more variance
+            * smaller k = more bias, less variance
+        * Leave One Out
+    * Considerations
+        * for time series data, the data must be in 'chunks'
+

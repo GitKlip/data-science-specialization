@@ -1,0 +1,123 @@
+---
+title: "ML Notes Wk2"
+author: "Erik Cornelsen"
+date: "May 31, 2016"
+output: html_document
+---
+
+# 2.1 Caret Package
+caret.r-forge.r-project.corg
+
+    * Does some cleaning, data splitting, creating training/testing datasets, model comparison
+    * Supports multiple ML algorithms in one package
+
+ML Algorithm Name   | obj Class | Package   | predict() Syntax
+-------------------------------------------------------------
+lin. discrim. anal  | lda       | MASS      | predict(obj) - no options needed
+Regr: Gen Lin Model | glm       | stats     | predict(obj, type="response")
+                    | gbm       | gbm       | predict(obj, type="response", n.trees)
+                    | mda       | mda       | predict(obj, type="posterior")
+                    | rpart     | rpart     | predict(obj, type="prob")
+                    | Weka      | RWeka     | predict(obj, type="probability")
+                    | LogitBoost| caTools   | predict(obj, type="raw", nIter)
+
+
+A basic flow:
+```{r}
+install.packages("caret", dependencies = TRUE)
+library(caret); lirary(kernlab); data(spam)
+
+#partition data
+inTrain<- createDataPartition(y=spam$type,p=.75,list = FALSE)
+training<-spam[inTrain,]
+testing<-spam[-inTrain,]
+dim(training);str(training)
+
+#fit a model
+modelFit<- train(type ~ . , data=training, method="glm")
+modelFit
+modelFit$finalModel
+
+#predict on new data using model
+predictions <- predict(modelFit,newdata=testing)
+
+#Confusino Matrix to check performance
+confusionMatrix(predictions, testing$type)
+
+```
+
+# 2.2 Data slicing
+Approaches to data splitting:
+```{r}
+library(caret);library(kernlab);data(spam)
+
+#Data Splitting
+##split full data into two groups (train and test)
+set.seed(32323); 
+inTrain<- createDataPartition(y=spam$type,p=.75,list = FALSE) #(must be done WITHOUT REPLACEMENT)
+training<-spam[inTrain,]
+testing<-spam[-inTrain,]
+dim(training);str(training)
+
+#Resampling
+##get a different sample set from the full data, repeat X times. takes avg of all the diff samples.
+set.seed(32323); 
+folds<-createResample(y=spam$type,times=10,list=TRUE)
+sapply(folds,length)
+folds[[1]][1:10]
+folds$Resample01
+
+# K-fold 
+##fold1: take full data and split it into testing and training. 
+##fold2+: repeat with a diff non-overlapping split from the first fold.
+##avg errors across all experiments to get estimate of how model will perform.
+###larger k/folds = less bias, more variance
+###smaller k/folds = more bias, less variance
+set.seed(32323); 
+folds<-createFolds(y=spam$type,k=10,list=TRUE,returnTrain=TRUE)
+sapply(folds,length)
+folds[[1]][1:10]
+
+#Return Test
+##??
+set.seed(32323); 
+folds<-createFolds(y=spam$type,k=10,list=TRUE,returnTrain=FALSE)
+sapply(folds,length)
+folds[[1]][1:10]
+
+#Leave One Out
+##set1: just take obs1 out for testing, everything else is training.
+##set2: repeat of previous, but take out obs2 instead. (continue for total # of obs)
+??
+
+#Time Slices
+set.seed(32323); 
+tme<-1:1000
+folds<-createTimeSlices(y=tme,initialWindow = 20, horizon = 10)
+names(folds)
+folds$train[[1]]
+folds$test[[1]]
+```
+
+# 2.3 Training Options
+
+# 2.4 Plotting Predictors
+See slide deck for code and visuals
+
+# 2.5 Basic Preprocessing
+
+# 2.6 Covariate Creation
+- Raw Data > create summarization variables (covariates)
+- Balancing act between useful summary and info loss. expert domain knowledge helps a lot!
+- Through exploratory analysis (plotting/tables) will help this process most
+
+Dummy Variables - library(caret);dummyVars(); - convert factor variables to numeric indicator variables
+Remove zeros - library(caret);nearZeroVar();
+Spline basis - library(splines);bs();
+    fitting curves with splines
+
+# 2.7 PreProcessing with principal components analysis
+
+# 2.8 Predicting with regression
+
+# 2.9 Predicting with Regression Multiple covariates

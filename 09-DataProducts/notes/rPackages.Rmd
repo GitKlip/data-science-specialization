@@ -1,0 +1,221 @@
+---
+title: "R Packages"
+output: 
+  html_document: 
+    number_sections: yes
+    toc: yes
+---
+# Intro
+An R Package is a form of data product. In creating an R package, you've created polished, documented software for your users. This is a big step over just distributing functions or code that does a task. 
+
+R Package = collection of R functions or other (data) objects wrapped together with documentation
+
+repositories/locations to get packages: 
+     * CRAN/Bioconductor, - install.packages()
+     * GitHub - install_github() from devtools package
+     * BitBUcket, Gitorious
+
+
+# Package Dev Process
+  * write some code in .R file
+  * incorporate R scipt into R package structure
+  * write documenation for functions
+  * Include other materials (examples,demos,datasets,tutorials)
+  * package it up
+  * submit to repository
+  * push code to repo (gitHub)
+  * update based on feedback and release a new version
+  
+  * Create a new directory with R/ and man/ sub-directories (or just use package.skeleton())
+  * Write a DESCRIPTION file
+  * Copy R code into the R/ sub-directory
+  * Write documentation files in man/ sub-directory
+  * Write a NAMESPACE file with exports/imports
+  * Build and check
+
+# R Package Essentials
+
+## Package Folders
+An R package is started by creating a directory with the name of the R package
+myPackage/
+  R/          #contains R code
+  man/        #documentation with .Rd files
+  DESCRIPTION #file that describes package
+  NAMESPACE   #file that describes the API for the package and all it's dependencies
+
+package.skeleton() function in the utils package creates a "skeleton" R package
+
+## A DESCRIPTION file which has info about the package
+Required
+
+  * Package: Name of package (e.g. library(name))
+  * Title: Full name of package
+  * Description: Longer description of package in one sentence (usually)
+  * Version: Version number (usually M.m-p format)
+  * Author, Authors@R: Name of the original author(s)
+  * Maintainer: Name + email of person who fixes problems
+  * License: License for the source code
+  
+Optional
+
+  * Depends: R packages that your package depends on
+  * Suggests: Optional R packages that users may want to have installed
+  * Date: Release date in YYYY-MM-DD format
+  * URL: Package home page
+  * Other fields can be added
+  
+## R code
+  * Copy R code into the R/ sub-directory
+  * There can be any number of files in this directory
+  * Usually separate out files into logical groups
+  * Code for all functions should be included here and not anywhere else in the package
+
+## NAMESPACE (optional, but do it)
+describes the API for the package and all it's dependencies
+
+EXPORT
+  * Used to indicate which functions are exported/public
+  * Exported functions can be called by the user and are considered the public API
+  * Non-exported functions cannot be called directly by the user (but the code can be viewed)
+  * Hides implementation details from users and makes a cleaner package interface
+
+IMPORT
+  * You can also indicate what functions you import from other packages
+  * This allows for your package to use other packages without making other packages visible to the user
+  * Importing a function loads the package but does not attach it to the search list
+
+Key directives
+    * export("<function>")
+    * import("<package>")
+    * importFrom("<package>", "<function>")
+Also important (for S4)
+    * exportClasses("<class>")
+    * exportMethods("<generic>")
+    
+EXAMPLE
+export("read.polyfile", "write.polyfile")
+
+importFrom(graphics, plot)
+
+exportClasses("gpc.poly", "gpc.poly.nohole")
+
+exportMethods("show", "get.bbox", "plot", "intersect”, "union”, "setdiff", 
+              "[", "append.poly", "scale.poly", "area.poly", "get.pts", 
+              "coerce", "tristrip", "triangulate")
+
+## Documentation (in the man/ sub-directory)
+  * Documentation files (.Rd) placed in man/ sub-directory
+  * Written in a specific markup language
+  * Required for every exported function. Another reason to limit exported functions
+  * You can document other things like concepts, package overview
+
+Help file Example (`line` Function)
+```
+\name{line}
+\alias{line}
+\alias{residuals.tukeyline}
+\title{Robust Line Fitting}
+\description{
+  Fit a line robustly as recommended in \emph{Exploratory Data Analysis}.
+}
+
+
+\usage{
+line(x, y)
+}
+\arguments{
+  \item{x, y}{the arguments can be any way of specifying x-y pairs.  See
+    \code{\link{xy.coords}}.}
+}
+
+\details{
+  Cases with missing values are omitted.
+
+  Long vectors are not supported.
+}
+\value{
+  An object of class \code{"tukeyline"}.
+
+  Methods are available for the generic functions \code{coef},
+  \code{residuals}, \code{fitted}, and \code{print}.
+}
+
+
+\references{
+  Tukey, J. W. (1977).
+  \emph{Exploratory Data Analysis},
+  Reading Massachusetts: Addison-Wesley.
+}
+```
+
+
+## Building & Checking
+system("R CMD build newpackage")
+
+  * 'build' is a command-line program that creates a package archive file (.tar.gz)
+  * can be from the command-line or using the system() function
+
+
+system("R CMD check newpackage")
+
+  * 'check' runs a battery tests. All tests must pass to put package on CRAN
+    * Documentation exists
+    * Code can be loaded, no major coding problems or errors
+    * Run examples in documentation
+    * Check docs match code
+    
+
+# PACKAGE EXAMPLE
+https://www.coursera.org/learn/data-products/lecture/t8FX1/building-r-packages-demo
+roxygen2 lets us keep documentation in the code and it will build the needed R package docs as required
+  Configure build tools > Generate Documentation with Roxygen
+
+```{r topten.R}
+#' Building a Model with Top Ten Features
+#' 
+#' This function develops a prediction algorithm based on the top 10 features
+#' in 'x' that are most predictive of 'y'.
+#' 
+#' @param x a n x p matrix of n observations and p predictors
+#' @param y a vector of length n representing the response
+#' @return a 'lm' object representing the linear model with the top 10 predictors
+#' @author Roger Peng
+#' @details
+#' This function runs a univariate regression of y on each predictor in x and
+#' calculates the p-value indicating the significance of the association. The
+#' final set of 10 predictors is the taken from the 10 smallest p-values.
+#' @seealso \code{lm}
+#' @import stats
+#' @export
+
+topten <- function(x, y) {
+        p <- ncol(x)
+        if(p < 10)
+                stop("there are less than 10 predictors")
+        pvalues <- numeric(p)
+        for(i in seq_len(p)) {
+                fit <- lm(y ~ x[, i])
+                summ <- summary(fit)
+                pvalues[i] <- summ$coefficients[2, 4]
+        }
+        ord <- order(pvalues)
+        x10 <- x[, ord]
+        fit <- lm(y ~ x10)
+        coef(fit)
+}
+
+#' Prediction with Top Ten Features
+#' 
+#' This function takes a set coefficients produced by the \code{topten}
+#' function and makes a prediction for each of the values provided in the
+#' input 'X' matrix.
+#' 
+#' @param X a n x 10 matrix containing n observations
+#' @param b a vector of coefficients obtained from the \code{topten} function
+#' @return a numeric vector containing the predicted values
+
+predict10 <- function(X, b) {
+        X <- cbind(1, X)
+        drop(X %*% b)
+}
+```

@@ -1,0 +1,447 @@
+---
+title: "Qualitative Activity Recognition"
+author: "Erik Cornelsen"
+date: '`r format(Sys.time(), ''%d %B, %Y'')`'
+output:
+  pdf_document:
+    fig_caption: yes
+  html_document:
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 6
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+subtitle: Machine Learning Class Project
+setspace: single
+---
+
+# Synopsis
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this analysis we will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants who were asked to perform barbell lifts correctly and incorrectly in 5 different ways. Our goal is to use to develop a machine learning model to correctly predict the manner in which they did the exercise based on new data. The "classe" variable in the training set is what we will predict.
+
+# Data
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions. Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes as follows: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+## Data Sourcing
+The training and testing data for this project are available here:
+
+    * https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+    * https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+    * When loading the data I chose to split the pml-training data into training(75%) and validation(25%) data sets.
+    * Loaded data sets are 'trn', 'vld', and 'tst'
+
+The project page, documentation, and citation for the data and how it was gathered:
+
+    * Project Page: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset)
+    * Further Documentation: http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf
+    * Citation for WLE data set:  Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+
+```{r loadData, eval=TRUE,include=FALSE,collapse=TRUE,echo=TRUE,results='markup'}
+library(caret)
+setwd("C:/Users/Erik/Documents/Analysis/Coursera/data-science-coursera/8-MachineLearning/ML_Project/")
+set.seed(12)
+
+getURLData <- function(srcFileUrl, destFileName) {
+    if(!file.exists("pml-training.csv")){
+        download.file(url = srcFileUrl, destfile = destFileName, mode="wb")
+    }  
+    data <- read.table( file=destFileName, sep=",", header=TRUE,       
+                        stringsAsFactors=TRUE, 
+                        na.strings = c("NA","","#DIV/0!",NA)) #account for various NA strings
+    return(data)
+}
+##Download and Load data
+trn.all <- getURLData("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","pml-training.csv")
+tst <- getURLData("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","pml-testing.csv")
+
+#Split training data into training and validation datasets
+inTrain <- createDataPartition(trn.all$classe, p = .75)[[1]]
+trn <- trn.all[ inTrain,]
+vld <- trn.all[-inTrain,]
+
+#str(trn, list.len=length(trn))
+dim(trn)
+dim(vld)
+dim(tst)
+```
+
+## Data Exploration
+After downloading the data and inspecting it several things were notable:
+
+    * Training dataset had 160 variables and 19622 observations.
+    * Many columns were very sparse (almost entirely NA's).  These sparse variables may have predictive value, but because there are so few, they become fairly useless for classifying. So it makes sense to filter these variables out and focus the prediction efforts on variables/columns that have at least 90% of their observations filled in.
+    * Every row had at least one NA as complete.cases() returns 0.
+    * ~300 rows had more data populated than most.  Seemed to correlate with new_window="yes".
+
+```{r exploration, eval=TRUE,include=TRUE,collapse=TRUE,echo=TRUE,results='markup'}
+df<-trn.all
+# str(df, list.len=length(df))#check structure
+sum(complete.cases(df)) #There are no complete cases due to NA's
+table(sapply(df,FUN=function(x) sum(is.na(x)))) #r1=num of NA's, r2=num of cols
+table(df$new_window) #rows where new_window="yes" seem to have more complete data but are very few
+
+```
+
+## Data Processing
+Took the following actions:
+
+    * Drop columns with 19k NA's (only keep columns with 0 NA's)
+    * Drop Factor columns that should not be used as predictors (X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp)
+    * Convert new_window column to binary (instead of y/n factor)
+    * Use preProcess() to center and scale the variables
+    * Resulting Data sets are 'trn2', 'vld2', and 'tst2'
+
+```{r preProcess, eval=TRUE,include=FALSE,collapse=TRUE,echo=TRUE,results='hide'}
+myPreProcess <- function(df) {
+    #DROP SPARSE/NA COL's.  Only keep columns with 0 NA's.
+#     include <- sapply(df,FUN=function(x) if(sum(is.na(x))==0){TRUE}else{FALSE} )
+#     df <- df[, include]
+#     print(sprintf("Dropped %d columns due to excessive NA's",sum(include)))
+#    
+    # function for determining sparseness of variables
+    checkSparse <- function(a) {
+        n <- length(a)
+        na.count <- sum(is.na(a))
+        return((n - na.count)/n)
+    }
+    # sparness of input variables based on training subset
+    sparseness <- apply(df, 2, checkSparse)
+    # trim down the subs by removing sparse variables
+    df <- df[, sparseness > 0.9]
+
+    #Drop bad predictor columns (housekeeping columns) 
+    df <- df[, 6:length(df)]  #drop X,user_name,raw_timestamp_part_1,raw_timestamp_part_2,cvtd_timestamp
+    #df[ , -which(names(df) %in% c("X","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp"))]
+    #df <- subset(df, select=-c(X,user_name,raw_timestamp_part_1,raw_timestamp_part_2,cvtd_timestamp))
+    
+    #convert new_window to binary
+    df$new_window <- sapply(df$new_window,FUN=function(v) if(v=="no"){0} else{1})
+
+    #PRE-PROCESS
+    #methods:zv,nzv,BoxCox/YeoJohnson/expoTrans,center,scale,range,knnImpute/bagImpute/medianImpute,pca,ica,spatialSign,conditionalX 
+    #pp <- preProcess(df, outcome=df$classe,  verbose=FALSE)
+    #df <- predict( pp , newdata=df)
+    #print(pp)
+    return(df)
+}
+#CREATE NEW DATASETS 
+trn2 <- myPreProcess(trn)
+vld2 <- myPreProcess(vld)
+tst2 <- myPreProcess(tst)
+
+str(trn2, list.len=length(trn2))
+dim(vld2)
+dim(tst2)
+```
+
+# Models
+I decided to apply multiple models to the data and see which one performs best. Models to check include: Naive Bayes (nb), Random Forest (rf), Random Forest with PCA (rfPCA), and a 'Stacked Model'.
+
+To reduce code and save time I created a helper function 'trainModel()' that is a wrapper around the 'train()' function.  After a model is created using train() it will save it to a 'models/' folder.  The next time it runs it will try to re-use the model from the models folder if it exists.  This greatly reduces the time for each iteration.  If I want to rebuild a model completly then I just need to delete it from the models folder.
+
+```{r trainModel, eval=TRUE,include=FALSE,collapse=TRUE,echo=TRUE,results='markup'}
+#a helper function that will save the model after it's been created and reuse that model if it exists to help reduce execution time.
+trainModel <- function(df, trnMethod, fileName, useCV=FALSE, pp=NULL ) {
+
+    fullFileName <- paste("models/",fileName,sep = "")
+    if(!dir.exists("models/")){dir.create("models/")}
+    
+    print(paste("Training Model: method =",trnMethod,"; fileName =",fullFileName,"; pp =",pp,"; useCV =",useCV))
+
+    #check for saved model
+    if(!file.exists(fullFileName)){
+    
+        if(is.null(pp) && useCV==FALSE) {
+            print("if1")
+            model <- train(classe ~ .,
+                           method=trnMethod, 
+                           data=df, 
+                           verbose = FALSE)  
+        }  
+        else if(is.null(pp) && useCV==TRUE) {
+            print("if2")
+            model <- train(classe ~ .,
+                           method = trnMethod, 
+                           data = df, 
+                           trControl = trainControl(method='cv',number=3), #gives cross-validataion (‘cv’) with 3 folds.
+                           verbose = FALSE)             
+        }
+        else if(!is.null(pp) && useCV==FALSE) {
+            print("if3")
+            model <- train(classe ~ .,
+                           method = trnMethod, 
+                           data = df, 
+                           preProcess = pp,
+                           verbose = FALSE)  
+        }
+        else if(!is.null(pp) && useCV==TRUE) {
+            print("if4")
+            model <- train(classe ~ .,
+                           method = trnMethod, 
+                           data = df, 
+                           preProcess = pp,
+                           trControl = trainControl(method='cv',number=3), #gives cross-validataion (‘cv’) with 3 folds.
+                           verbose = FALSE)  
+        }
+        else { stop("ERROR") }
+        saveRDS(model,file=fullFileName)
+        print(paste("Saved Model To ", fullFileName))
+
+    }
+    else{
+        model<-readRDS(fullFileName)
+        print(paste("Re-Using Model From ", fullFileName))
+    }
+    #print(model)
+    print("trainModel() complete")
+    return(model)
+}
+```
+
+```{r functionValidations, eval=FALSE,include=FALSE}
+#     
+# rankhospital <- function(state, outcome, num = "best") {
+#   ## validate state input
+#   validStates = as.factor(data[,7])
+#   if(!state %in% validStates) {stop("invalid state")}
+#   # Validate outome input
+#   validOutcomes = c("heart attack", "heart failure", "pneumonia")
+#   if(!outcome %in% validOutcomes) {stop("invalid outcome")}
+#   # Validate num input (“best”, “worst”, or an integer)
+#   if(!class(num)=="numeric" & !num %in% c("best","worst")) stop("invalid num")
+#   
+
+# myFun3 <- function(input=NULL) {
+#   Check <- c("ns", "dl", "sv", "asv", "cs")
+#   if (is.null(input)) {
+#     message("No 'input' value defined. Using 'ns' by default")
+#     input <- "ns"
+#   } 
+#   input <- match.arg(input, Check)  #THIS IS WHERE THE MAGIC HAPPENS
+#   switch(input,
+#          ns = "Whoo",
+#          dl = "Whee",
+#          sv = "Whaa",
+#          asv = "Whii",
+#          cs = "Whuu")
+# }
+```
+
+## Cross Validation
+With 19k observations in the training set, I was tempted to assume that cross-validation was not needed.  However, when looking at the data I found that there were often only microseconds difference between the observations.  It turns out that the data comprises 6 people completaketing 10 reps each, which is only 60 total 'observations'.  The tools used to measure the reps are taking many measurements very quickly and closely together.  Because we're really dealing with a total sample of 60 we do need to apply some cross validation while training our models.  I chose to do cross validation with 3 folds (CV=3).
+
+On further research I found that Cross-validation isn't really needed for Random Forests because the model inherently keeps a portion of the data out of each creation of a tree.  This already prevents the problems that cross validation is used to address.  So I'll use it for Naive Bayes but not for the Random Forest based models.
+
+```{r notes, eval=FALSE,include=FALSE}
+# # Cross Validation
+# CV is a tool to detect relevant features and building models
+# 
+#     * Approach:
+#         * Use the Train set
+#         * split it into Train/Test set
+#         * build a model on the Train set
+#         * evaluate on the Test set
+#         * repeat and average the estimated errors
+#     * Used For:
+#         * picking vars to include in a model
+#         * picking the type of prediction function to use
+#         * picking the paramaters on the prediction function
+#         * comparing different predictors
+#     * Approaches to data splitting:
+#         * Random Subsampling
+#             * must be done WITHOUT REPLACEMENT
+#         * K-fold
+#             * larger k = less bias, more variance
+#             * smaller k = more bias, less variance
+#         * Leave One Out
+#     * Considerations
+#         * for time series data, the data must be in 'chunks'
+```
+
+## Identify Most Important Vars by using Random Forest
+
+With a subset of the data we will use a random forest to determine variable importance. Then we'll use this information to cull out any variables that are deemed unimportant before actually creating the RF model.  This will help prevent overfitting of the model on the training data.
+
+The plots show the normalized importance of the remaining input variables. The first plot shows all the variables and the second plot show the top 20. We learn that the top 20% to 25% of the variables dominate in importance, so the rest can be dropped.
+
+```{r rfVars, eval=TRUE,include=TRUE,collapse=TRUE,echo=FALSE,results='markup', warning=FALSE, message=FALSE}
+set.seed(1234)
+rfModelVars <- trainModel(vld2, "rf", "rfModelVars.rds")   
+rfVars <- varImp(rfModelVars)
+# rfVars$importance
+par(mfrow=c(2,1))
+plot(rfVars, main = "Total Variable Importance") # All Vars plot
+plot(rfVars, main = "Top 20 Variables (rf)", top = 20)# Top 20 plot
+```
+
+We will use the top 25% of varibles based on their importance and then train the actual RF model(s) that we will use.  We'll save the accuracy measures to help determine which one to keep and use.  We're left with the following
+```{r removeVars, eval=TRUE,include=FALSE,collapse=TRUE,echo=FALSE,results='markup', warning=FALSE, message=FALSE}
+set.seed(12345)
+rfVarsThresh <- quantile(rfVars$importance[, 1], 0.75) #figure out the split/threshold on the important variables
+rfVarsFilter <- rfVars$importance[, 1] >= rfVarsThresh #apply the threshold to the columns, creating a T/F list
+trn2 <- data.frame(trn2[, rfVarsFilter],classe=trn$classe) #drop the unwanted columns in all data sets, keep classe
+vld2 <- data.frame(vld2[, rfVarsFilter],classe=vld$classe) #drop the unwanted columns in all data sets, keep classe
+tst2 <- tst2[, rfVarsFilter] #drop the unwanted columns in all data sets, classe dosn't exist
+str(tst2)
+```
+
+## Model: Naive Bayes (nb)
+Naive Bayes is a simple model to use as a baseline. It tries to classify instances based on the probabilities of previously seen attributes/instances, assuming complete attribute independence. It can handle missing data pretty well.  
+```{r nbModel, eval=TRUE,include=TRUE,collapse=TRUE,echo=FALSE,results='markup', warning=FALSE}
+set.seed(123)
+#TRAIN the Model
+nbModel <- trainModel(trn2, "nb", "nbModel.rds", TRUE)                     #naive bayes
+nbModel
+#VALIDATE the Model
+nbPredict_vld <- predict(nbModel,newdata = vld2);
+#confusionMatrix(vld2$classe,nbPredict_vld) 
+nbAccuracy <- postResample(vld2$classe,nbPredict_vld) 
+```
+
+## Model: Random Forests (rf,parRF,gbm)
+Random Forests grows many classification trees. To classify a new object from an input vector it puts the input vector down each of the trees in the forest. Each tree gives a classification, and we say the tree "votes" for that class. The forest chooses the classification having the most votes (over all the trees in the forest).
+
+```{r rfNotes,eval=FALSE,include=FALSE}
+**How random forests work**
+When the training set for the current tree is drawn by sampling with replacement, about one-third of the cases are left out of the sample. This oob (out-of-bag) data is used to get a running unbiased estimate of the classification error as trees are added to the forest. It is also used to get estimates of variable importance.
+
+After each tree is built, all of the data are run down the tree, and proximities are computed for each pair of cases. If two cases occupy the same terminal node, their proximity is increased by one. At the end of the run, the proximities are normalized by dividing by the number of trees. Proximities are used in replacing missing data, locating outliers, and producing illuminating low-dimensional views of the data.
+```
+
+** Train Random Forest Models **
+To compare how they each perform, I trained several random Forest models, predict using a validation data set, and capture their accuracies. Models tested were: 'rf', 'rf' with PCA, 'parRF', and 'gbm'.
+```{r rfModel, eval=TRUE,include=TRUE,collapse=TRUE,echo=TRUE,results='hide', warning=FALSE, message=FALSE}
+
+#TRAIN & VALIDATE  #Random Forest
+set.seed(123456)
+rfModel <- trainModel(trn2, "rf", "rfModel.rds") 
+rfPredict_vld <- predict(rfModel,newdata = vld2);
+# confusionMatrix(vld2$classe,rfPredict_vld) 
+rfAccuracy <- postResample(vld2$classe,rfPredict_vld) 
+
+#TRAIN & VALIDATE  #Random Forest With PCA
+set.seed(1234567)
+rfpcaModel <- trainModel(trn2, "rf", "rfpcaModel.rds",useCV=FALSE, "pca") 
+rfpcaPredict_vld <- predict(rfpcaModel,newdata = vld2);
+# confusionMatrix(vld2$classe,rfpcaPredict_vld) 
+rfpcaAccuracy <- postResample(vld2$classe,rfpcaPredict_vld) 
+
+#TRAIN & VALIDATE  #parallel random Forest
+set.seed(12345678)
+parrfModel <- trainModel(trn2, "parRF", "parrfModel.rds")     
+parrfPredict_vld <- predict(parrfModel,newdata = vld2);
+# confusionMatrix(vld2$classe,parrfPredict_vld) 
+parrfAccuracy <- postResample(vld2$classe,parrfPredict_vld) 
+
+#TRAIN & VALIDATE  #boosted trees, Stochastic Gradient Boosting
+set.seed(123456789)
+gbmModel <- trainModel(trn2, "gbm", "gbmModel.rds")  
+gbmPredict_vld <- predict(gbmModel,newdata = vld2);
+# confusionMatrix(vld2$classe,gbmPredict_vld) 
+gbmAccuracy <- postResample(vld2$classe,gbmPredict_vld) 
+
+# Runtimes:    user  system elapsed 
+# nb         423.08    0.33  426.11
+# rf         667.90    4.74  675.10
+# rfpca           ?       ?       ?
+# parrf      335.99    2.42  340.69
+# gbm        359.95    0.81  366.53
+```
+
+# Results: Final Model Selection & Predictions
+Here is the comparison of the different models. Based on this I choose to use "rf" model to make my predictions.
+```{r finalModelSelection, eval=TRUE,include=TRUE,collapse=TRUE,echo=TRUE,results='markup', warning=FALSE}
+data.frame(nbAccuracy,rfAccuracy,rfpcaAccuracy,parrfAccuracy,gbmAccuracy)
+
+finalPredictions <- predict(rfModel,newdata = tst2);
+#finalPredictions
+```
+
+## Expected Out-Of-Sample-Error
+We need to account for possible overfitting of the model on the train and validation data.  This could be done with:
+
+    * In Sample Error (resubstitution error): the error rate you get on the same data set you used to build your predictor.  
+    * Out of Sample Error(generalization error): The error rate you get on a new data set.  
+
+We want to know  the Out of Sample Error:
+```{r outOfSampleError, eval=TRUE,include=TRUE,collapse=TRUE,echo=TRUE,results='markup', warning=FALSE}
+missClass = function(values, prediction) {
+    sum(prediction != values)/length(values)
+}
+errRate = missClass(vld2$classe, finalPredictions) 
+errRate
+```
+Based on the missclassificaiton rate on the validation subset, an unbiased estimate of the random forest's out-of-sample error rate is `r errRate*100`%.
+
+
+
+```{r rfErrorNotes, eval=FALSE, include=FALSE}
+#' @vivk : In my (limited) experience, a randomForest often ends up with a 0% training error, and a non-zero OOB error. This means that even though individual trees in the forest aren't prefect(>0 OOB error), the ensemble(forest) is perfect, hence the 0% training error. Perfect here implies overfitting - or seen another way, the forest has mapped out(memorized) the entire training set.
+#' 
+#' Regarding the OOB error as an estimate of the test error : Remember, even though each tree in the forest is trained on a subset of the training data, all the training data is still eventually used to build the forest. So there still is some bias towards the training data. That's why something like cross validation is a more accurate estimate of test error - your not using all of the training data to build the model.
+#' 
+#' ###################
+#' http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr
+#' **Remarks**
+#' Random forests does not overfit. You can run as many trees as you want. It is fast. Running on a data set with 50,000 cases and 100 variables, it produced 100 trees in 11 minutes on a 800Mhz machine. For large data sets the major memory requirement is the storage of the data itself, and three integer arrays with the same dimensions as the data. If proximities are calculated, storage requirements grow as the number of cases times the number of trees.
+#' 
+#' **The out-of-bag (oob) error estimate**
+#' In random forests, there is no need for cross-validation or a separate test set to get an unbiased estimate of the test set error. It is estimated internally, during the run, as follows:
+#' 
+#' Each tree is constructed using a different bootstrap sample from the original data. About one-third of the cases are left out of the bootstrap sample and not used in the construction of the kth tree.
+#' 
+#' Put each case left out in the construction of the kth tree down the kth tree to get a classification. In this way, a test set classification is obtained for each case in about one-third of the trees. At the end of the run, take j to be the class that got most of the votes every time case n was oob. The proportion of times that j is not equal to the true class of n averaged over all cases is the oob error estimate. This has proven to be unbiased in many tests.
+
+```
+
+```{r stackedModels, eval=FALSE,include=FALSE,collapse=TRUE,echo=TRUE,results='markup', warning=FALSE}
+## Model: Stacked Models
+#I Chose to not include this due to running out of time and an initial failed attempt.
+
+
+##Concept: take the predictions from the other models, STACK the predictions together using random forests ("rf"). This trains a new model with the other models preditions. Normally the stacked predictions are better than the individuals.
+    # postResample(vld2$classe,nbPredict_vld) #Accuracy=0.8676591    Cohens Kappa=0.8304188 (0=pure chance, 1=completly correct)
+    # postResample(vld2$classe,rfPredict_vld) #Accuracy= 1   Cohens Kappa=1 (0=pure chance, 1=completly correct)
+    # postResample(vld2$classe,rfPCAPredict_vld) #Accuracy= .99306   Cohens Kappa=.99102 (0=pure chance, 1=completly correct)
+
+#CREATE DATA SETS - use the validation predictions from the models
+load("nbPredict_vld.dat")
+load("rfPredict_vld.dat")
+load("rfPCAPredict_vld.dat")
+
+trnDF <- data.frame(nb=nbPredict_vld,
+                    rf=rfPredict_vld, 
+                    rfpca=rfPCAPredict_vld,
+                    classe=vld$classe)
+
+str(trnDF)
+
+#TRAIN Stacked Model
+comboModel <- train(classe ~ ., method="rf", data=trnDF)
+comboModel #Accuracy=0.9996662, Kappa=0.9995782
+save(comboModel,file="comboModel.dat")
+
+#VALIDATE the stacked model
+#Don't have any extra data do do validations because each model had a slightly different pre-processing for data sets.  only have predictions from vld2 data sets.
+
+
+#PREDICT STACKED
+load("nbPredict.dat")
+load("rfPredict.dat")
+load("rfPCAPredict.dat") 
+load("comboModel.dat") 
+tstDF <- data.frame(nb=nbPredict,
+                    rf=rfPredict, 
+                    rfpca=rfPCAPredict)
+
+comboPredict <- predict(comboModel,newdata = tstDF);
+save(comboPredict,file="comboPredict.dat")
+
+data.frame(nbPredict)
+
+```
+

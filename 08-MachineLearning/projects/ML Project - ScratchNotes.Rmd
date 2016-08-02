@@ -1,0 +1,100 @@
+---
+title: "ML Project"
+author: "Erik Cornelsen"
+date: "June 19, 2016"
+output: html_document
+---
+
+```{r helperFunctions}
+library(caret)
+set.seed(325)
+#---------------------------------------
+#Importing Data
+getURLData <- function(srcFileUrl, destFileName) {
+    if(!file.exists("pml-training.csv")){
+        download.file(url = srcFileUrl, destfile = destFileName, mode="wb")
+    }  
+    data <- read.table( file=destFileName, sep=",", header=TRUE,       stringsAsFactors=TRUE, na.strings = c("NA","","#DIV/0!",NA))
+    return(data)
+}
+
+#---------------------------------------
+## nearZeroVar() - MANUAL, can do inside preProcess if desired
+nearZero <- nearZeroVar(df,saveMetrics=TRUE )
+dim(nearZero[nearZero$nzv==TRUE,]) #columns that are near zero values
+df1<-df[,!nearZero$nzv]  #only keep columns that are not NZV
+
+pp <- preProcess(df, method=c("zv","knnImpute"),
+                    #zv-exclude zero values (use nzv to exclude more)
+                    #knnImpute-impute missing values: knnImpute, or bagImpute, or medianImpute
+                 k=3, knnSummary=mean,
+                 na.remove=FALSE, #to many NA's to remove the rows
+                 outcome=df$classe, verbose=TRUE)
+
+#---------------------------------------
+#convert from factor to binary
+df$new_window <- sapply(df$new_window,FUN=function(v) if(v=="no"){0} else{1})
+
+#---------------------------------------
+#VIEW ALL OF STR() OUTPUT FOR LONG DF's
+str(df, list.len=length(df))#check structure
+
+#---------------------------------------
+##DEAL WITH NA's - set to zero (bad?)
+df[is.na(df)]<-0 #set NA to 0 in num/int columns
+
+#---------------------------------------
+##DEAL WITH NA's - impute with caret
+#http://stats.stackexchange.com/questions/144922/r-caret-and-nas/195067
+
+#---------------------------------------
+##CONVERT FACTORS TO INDICATORS
+#2) 2.6 convert factors to indicators http://amunategui.github.io/dummyVar-Walkthrough/#
+dmy <- dummyVars( ~ ., data=df1, fullRank=TRUE) #make dummy model for chars/factors, except classe
+df2 <- data.frame(predict(dmy, newdata = df1)) #create transformed data set from dummy model and actual data
+
+
+#---------------------------------------
+#PCA ANALYSIS - destroys original vars and creates new ones, less readable, more accurate
+
+   # 3) Principal Component ANalysis (PCA) to reduce vars/columns
+    #FIRST METHOD - manual correlation
+    M<-abs(cor(d3))#identify correlated variables
+    diag(M) <- 0 #Extract or replace the diagonal of a matrix
+    pca <- which(M > .8, arr.ind = TRUE) #identify which indicies are more closely correlated 
+
+#     #SECOND METHOD - CARET preProcess
+    #applies the PCA method and produces an object/model for it
+    #if 'thresh' set will find the number of components needed to cover the specified variance %
+    #if 'pcacomp' set will keep the top X components that explain the most variation
+    #Non-numeric predictors are allowed but will be ignored.
+    str(df1,list.len=length(df1))
+    sum(complete.cases(df1))
+    pcaPreProc <- preProcess(df1, method="pca", thresh=.90 , na.remove=FALSE, outcome=df1$classe, verbose=TRUE)
+    print(pcaPreProc)
+    #applies the pca object to the training data to output a new data set where PCA has been applied
+    #http://stackoverflow.com/questions/20150174/about-pca-in-r
+    df2 <- predict(pcaPreProc,newdata=df1)
+    
+#---------------------------------------
+# NAIVE BAYES MODEL
+#http://joshwalters.com/2012/11/27/naive-bayes-classification-in-r.html
+#Naive Bayes tries to classify instances based on the probabilities of previously seen attributes/instances, assuming complete attribute independence. can handle missing data
+#The trainControl part tells the trainer to use cross-validataion (‘cv’) with 10 folds.
+#to lookup available tuning parameters for a given model use `modelLookup("nb")`
+#to set tuning paramaters within train use tunegrid `train(....,tuneGrid=data.frame(fL=0,usekernel=FALSE))`
+model = train(classe ~ .,method='nb', data=train.trnsf,
+              trControl=trainControl(method='cv',number=10))
+
+#---------------------------------------
+#A little modified chunk of ?sprintf:
+#The string fmt (in our case "%3d") contains normal characters, which are passed through to the output string, and also conversion specifications which operate on the arguments provided through .... The allowed conversion specifications start with a % and end with one of the letters in the set aAdifeEgGosxX%. These letters denote the following types:
+    #d: integer
+#Eg a more general example
+
+    sprintf("I am %10d years old", 25)
+#[1] "I am         25 years old"
+#          ^^^^^^^^^^
+#          |        |
+#          1       10
+```

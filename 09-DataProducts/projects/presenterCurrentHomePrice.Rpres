@@ -1,0 +1,49 @@
+Estimate Current Home Value using HPI
+========================================================
+author: Erik Cornelsen
+date: ```r library(lubridate);today()```
+
+Outline
+========================================================
+
+In this deck we'll review the following:
+
+- What does the 'Home Values using HPI' app do?
+- What is HPI data and where does it come from?
+- "Next Steps" to improve the app.
+
+
+
+Application Purpouse
+========================================================
+- This shiny app's purpose is to predict/estimate a home's current value based on it's price at time of purchase and the federal The Housing Price Index (HPI).
+
+- The HPI is an accurate indicator of house price trends at various geographic levels. We use the 5 digit zip code level.  The HPI is provided by the [FHFA](http://www.fhfa.gov) and measures average price changes in repeat sales/refinancings on the same single-family properties.
+- HPI data is obtained by reviewing repeat mortgage transactions on single-family properties whose mortgages have been purchased or securitized by Fannie Mae or Freddie Mac since January 1975.
+
+
+HPI Data
+========================================================
+- Information about the HPI and other datasets can be found [here](http://www.fhfa.gov/DataTools/Downloads/Pages/House-Price-Index.aspx) .
+- The structure of the data is as follows:
+```{r echo=FALSE}
+fileName <- "data/HPI_AT_ZIP5.csv"
+df <- read.table( file=fileName, sep=",", header=TRUE, stringsAsFactors=TRUE,
+                    na.strings = c("NA","","#DIV/0!",NA,".")) #account for various NA strings
+str(df[,c(-7,-8)], vec.len=3, strict.width = "cut", width=45 )
+```
+- Three HPI values are provided.  I used the base 'HPI' value which starts it's value in 1975 at 100.
+- The working paper about how the data was generated is accessible [here](http://www.fhfa.gov/papers/wp1601.aspx)
+
+
+Next Steps
+========================================================
+These are a few of the key enhancements I'd like to make to the app:
+- Add robust input validation
+- Display additional info with the prediction (index values considered)
+- Consider using zip3 data instead of zip5 (zoom out on geo and zoom in on time)
+- Add ability for app to automatically pull the latest data from FHFA (must handle .xlsx, maybe `rio`?
+- Embellish Plot. (mark where bought, mark data point comparing to)
+- Add inputs for user to compare two dates of their choice
+- Find easier way to use shiny (maybe [app.R](http://shiny.rstudio.com/images/shiny-cheatsheet.pdf) or [interactive docs](https://blog.rstudio.org/2014/06/19/interactive-documents-an-incredibly-easy-way-to-use-shiny/))
+

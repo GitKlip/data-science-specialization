@@ -1,0 +1,120 @@
+---
+title: "ML Notes Wk3"
+author: "Erik Cornelsen"
+date: "June 9, 2016"
+output: html_document
+---
+
+#3.1 ML Predicting with Trees
+
+Concept: iterativley spit variables into groups of things that are the same. repeat to reasonable level.
+PRO: Easy interpretation. Better performance for non-linear.
+CON: Can Overfitt without pruning/cross validation.  Harder to estimate uncertainty. Variable results.
+
+Basic Algorithm:
+
+    1. Start with all the variables in one group
+    1. Find the Varible/split that best separates the outcomes
+    1. Divide the data into two groups ("leaves") on that split ("node")
+    1. Within each split, find the best variable/split that separates the outcomes
+    1. Continue until the groups are too small or sufficently "pure"
+    
+*Measures of impurity*
+In a prticular group/leaf: count the times that a particluar class appears in that group
+
+    * Missclassification Error
+        * 1-(class with most common probability)
+        * 0=perfect purity, 0.5=no purity
+    * Gini Index
+        * 1-sum of squared probabilites that you obelong to any of the classes.
+        * 0=perfect purity, 0.5=no purity
+    * Deviance/Information gain
+        * uses log
+        * 0=perfect purity, 1=no purity
+        
+Example:
+```{r}
+#Question: want to predict the specis
+data(iris);library(ggplot2); library(caret)
+names(iris);table(iris$Species)
+
+#Split data
+inTrain<-createDataPartition(y=iris$Species,p=0.7,list=FALSE)
+training<-iris[inTrain,]
+testing<-iris[-inTrain,]
+dim(training);dim(testing)
+str(training)
+
+#plot shows 3 distinct groups. possibly difficult for linear but good for classification tree.
+qplot(Petal.Width,Sepal.Width,colour=Species,data=training)
+
+#train/fit the model using Species and all data
+modFit<-train(Species ~ ., method="rpart",data=training)
+#shows rules for all the nodes and their splits
+print(modFit$finalModel) 
+# create dendergram visualization of tree
+plot(modFit$finalModel,uniform = TRUE, main="Classification Tree")
+text(modFit$finalModel, use.n = TRUE, all = TRUE, cex=.8)
+library(rattle)
+fancyRpartPlot(modFit$finalModel)
+
+#predict new values
+predict(modFit,newdata=testing)
+```
+
+# 3.2 Bagging
+Bootstrap Aggregating - average complicated models together to get a smoother more balanced result
+
+    1. take sample of data fit a curve with model
+    1. resample from data and calculate predicted line (repeat multiple times)
+    1. average or majority vote of predicted lines
+
+ex: predict temp as a function of ozone
+
+
+# 3.3 Random Forests
+similar to bagging. very accurate.
+
+    1. Boostrap samples
+    1. At each split, bootstrap bariables (only subset of vars considered at each split)
+    1. grow multiple trees (send training data through each tree) and vote on 'best tree'
+    
+PROS: Accuracy
+CONS: Speed(slow). Interperatability(lots of nodes and leaves). Overfitting(mitigae with cross validation)
+
+library(caret)
+modFit <- train(Species ~ ., data=training, method="rf", prox=TRUE)
+modFit
+getTree(modFit$finalModel,k=2)
+
+pred <- predict(modFit,testing)
+testing$predRight <- pred==testing$Species
+table(pred,testing$Species)
+
+# 3.4 Boosting
+very accurate like random forests. (ex Adaboost on wikipedia)
+
+    1. take lots of (possibly) weak predictors
+        * examples: ALL possible trees, ALL possible regression models, ALL possibe cutoffs 
+    1. test, upBoost weight for missclassed items, repeat, add classifiers up to get best model
+        * goal is to minimize error (on training set)
+        * Iterative, select one classifier at each step
+        * calculate weights based on errors
+        * upweight missed classifications and select next classifier
+    1. get a stronger predictor
+    
+# 3.5 Model Based Prediction
+
+    1. Assume the data follows a probabilistic model
+    1. Use [Bayes Theorem](https://betterexplained.com/articles/an-intuitive-and-short-explanation-of-bayes-theorem/) to identify optimal classifiers
+
+PROS: take advantage of data structre. computationaly convient. reasonably accurate on real problems.
+CONS: makes assumptions about the data. if model incorrect, reduced accuracy.
+
+
+#ML algorithm cheat sheets
+http://www.lauradhamilton.com/machine-learning-algorithm-cheat-sheet
+https://azure.microsoft.com/en-us/documentation/articles/machine-learning-algorithm-choice/
+https://azure.microsoft.com/en-us/documentation/articles/machine-learning-algorithm-cheat-sheet/
+http://www.analyticsvidhya.com/blog/2015/09/full-cheatsheet-machine-learning-algorithms/
+https://jixta.wordpress.com/2015/08/01/machine-learning-algorithms-cheat-sheet/

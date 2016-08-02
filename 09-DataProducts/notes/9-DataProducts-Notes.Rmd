@@ -1,0 +1,44 @@
+---
+title: "Course Notes"
+author: "Erik Cornelsen"
+date: "July 1, 2016"
+output: 
+  html_document: 
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+---
+
+# Interactive Graphics Tools
+## Manipulate
+Quick and dirty tool in RStudio to illustrate something with a collegue.  
+## Shiny
+A web application framework for R. Turn your analyses into interactive web applications No HTML, CSS, or JavaScript knowledge required.
+https://www.rstudio.com/products/shinyapps/
+## plotly
+## rCharts
+## googleVis
+
+# Presentations
+## Slidify
+## gh-pages
+## RStudio Presenter
+
+
+# Data Products
+## Data Report
+Make your reports reproduceable
+
+    code/
+        finalcode/          - cleaned up raw to only show the things that may go into the final rpt
+        rawcode/            - cache, figures, .rmd, all calcs and computations, messy
+    data/
+    figures/                - final figures to include in rpt
+    prompt.pdf              - the question or assignment that prompted this analysis
+    writing/                - final rpt writeup (.docx, .pdf, .html). includes sections for title, intro, methods, results, conclusions, and references
+
+
+# R Packages
+## Packages
+## Classes & Methods

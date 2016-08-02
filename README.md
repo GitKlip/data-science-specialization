@@ -2,7 +2,6 @@
 Erik Cornelsen  
 <base target="_top"/>
 
-[TEST LINK](https://github.com/GitKlip/data-science-specialization/04-ExploratoryDataAnalysis/ExData_Project1/README.md)
 
 #Introduction
 The Data Science Specialization from Johns Hopkins University covers the concepts and tools used throughout the entire data science pipeline, from asking the right kinds of questions to making inferences and publishing results. The specialization consists of 9 courses and concludes with a Capstone project where I applied the skills I learned throughout the courses.
@@ -40,7 +39,7 @@ Obtaining data from the web, APIs, databases and colleagues in various formats. 
 Essential exploratory techniques for summarizing and plotting data to inform and guide the development of more complex and formal statistical models. Practice with three R plotting systems: *Base Plotting System, Lattice Plotting System and ggplot2*.
 
 **Project:** [Exploration of electric power consumption data](./04-ExploratoryDataAnalysis/ExData_Project1/README.md)  
-**Project:** [Exploration of PM2.5 emissions Data](http://rpubs.com/ercorne/ExData_Project2) |  [source](./04-ExploratoryDataAnalysis/ExData_Project2/ExData-project2.Rmd)  
+**Project:** [Exploration of PM2.5 emissions Data](http://rpubs.com/ercorne/ExData_Project2) |  [source](./04-ExploratoryDataAnalysis/EXData_Project2/ExData-project2.Rmd)  
 **Certificate:** [Exploratory Data Analysis](https://www.coursera.org/account/accomplishments/certificate/ZKD5QDTFRG)  
 
 
@@ -91,5 +90,5 @@ create a usable/public data product in collaboration with SwiftKey (developer of
 * Build a predictive data model for analyzing large textual data sets
 * Build a final data product 
 
-**Project:** In Process
-**Certificate:** In Process
+**Project:** In Process  
+**Certificate:** In Process  

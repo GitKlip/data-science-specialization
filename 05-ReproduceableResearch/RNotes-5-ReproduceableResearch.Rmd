@@ -1,0 +1,155 @@
+---
+title: "Reproducible Research Notes"
+author: "Erik Cornelsen"
+output:
+  html_document:
+    fig_caption: yes
+    toc: yes
+    toc_depth: 4
+
+---
+
+## 5 - Reproduceable Research    - *([top](#TOC))*
+
+1. Replication of Study <--> Reproduceable Results of Analysis <--> Do Nothing
+1. An analysis carries more weight and is trusted more if it's reproduceable.
+1. To make Reproduceable:
+    1. make analytic data and analytic code available
+    1. document the analytic data and code
+    1. have standard way to share and access data and code
+
+![Research Pipeline](./5-ReproduceableResearch/ResearchPipeline.png)
+ 
+
+### Steps in a data analysis  -  *([top](#TOC))*
+
+1. **Define the question**
+    1. Good question needs to be specific.  You may start general but need to refine it so that you get a clear result.
+    1. Spectrum of Approaches: Science <> Data <> Applied Statistics <> Theoretical Statistics
+    1. Science/Common Sense need to guide the formulation of a proper question.  Avoid applying statistics to data randomly w/o a scientific context to work from. 
+    1. Garbage In > Garbage Out
+1. **Define the ideal data set** (may depend on your goal)
+    1. Descriptive - a whole population 
+    1. Exploratory - a random sample with many variables measured 
+    1. Inferential - the right population, randomly sampled 
+    1. Predictive - a training and test data set from the same population 
+    1. Causal - data from a randomized study 
+    1. Mechanistic - data about all components of the system 
+1. **Determine what data you can access**
+1. **Obtain the data**
+    1. Find, Buy, Create
+    1. respect the terms of use for data obtained
+    1. http://archive.ics.uci.edu/ml/datasets/
+    1. get RAW data and always reference the source
+1. **Clean the data**
+1. **Exploratory data analysis**
+    1. look at summaries, distributions, etc
+    1. check for missing data
+    1. create exploratory plots, cluster analysis, relationships between predictors
+1. **Statistical prediction/modeling**
+    1. informed by exploratory analysis
+    1. account for transformations/processing
+    1. report any measures of uncertainty
+1. **Interpret results**
+    1. approprieate language: describes, correlates with, associated with, leads to, causes, predicts
+    1. give an explanation
+    1. interpred coefficents and measures of uncertainty
+1. **Challenge results**
+    1. Challenge all steps: Question, Data source, Processing, Analysis, Conclusions
+    1. Challenge measures of uncertainty 
+    1. Challenge choices of terms to include in models 
+    1. Think of potential alternative analyses
+1. **Synthesize/write up results**
+    1. Lead with the question 
+    1. Summarize the analyses into the story 
+    1. Don't include every analysis, include it only:
+        1. If it is needed for the story 
+        1. If it is needed to address a challenge
+    1. Order analyses according to the story, rather than chronologically 
+    1. Include "pretty" ﬁgures that contribute to the story
+1. **Create reproducible code**
+
+
+### Project & Folder Organization  -  *[toc](#TOC)*
+
+**Data Analysis File Types**
+
+1. Data
+    1. Raw data
+    1. Processed data
+1. Figures
+    1. Exploratory figures
+    1. Final figures
+1. R code
+    1. Raw / unused scripts
+    1. Final scripts
+    1. R Markdown files
+1. Text
+    1. README files
+    1. Text of analysis / report
+    
+    
+**[ProjectTemplate() Package](http://projecttemplate.net/index.html)**
+
+```
+> install.packages("ProjectTemplate")
+> library('ProjectTemplate')
+> create.project('letters')
+...put data in 'data' folder and setwd to project dir...
+> load.project()
+```
+
+
+### Communicating Results  -  *([top](#TOC))*
+
+1. **Research Paper**
+    1. Title / Author List
+    1. Abstract
+    1. Body / Results
+    1. Supplementry Details (gory details)
+    1. Code / Data (really gory details)
+1. **Email**
+    1. Subject Line - summarize in one sentance
+    1. Email Body
+        1. brief descritpion / context / what was proposed
+        1. summarize findings / results
+        1. 1-2 paragraphs
+        1. suggested next actions (as concrete as possible)
+        1. make any questions you have for reader be yes/no answers
+    1. Attachments - Rmd, knitr, stay concise
+    1. links to supplementry materials - code, software, data, github, etc
+1. **RPubs.com**
+    1. publish Rmd files to world for people to see
+    1. Free, Public
+
+### Checklist for Reproducible Research  -  *([top](#TOC))*
+
+```{r child = "./RNotes-5-RRChecklist.Rmd"}
+```
+
+
+### Aaron Thoughts    - *([top](#TOC))*
+
+1. spend as much time as you need making the data clean 
+1. tidy data
+	1. 3 principles
+	1. what if you want to analyze is a composite of 2 tidy tables.
+	1. unit of observation vs unit of analysis
+1. make sure ALL cleaning is 100% programatic/automatic
+1. problem: cluttered namespace
+	1. differnt locations for data
+	1. variables and stuff saved to default/global namespace (DF1,DF2,DF3,DF4, what was what?)
+	1. solution is functional programming
+	1. when execution goes into a function you have a new, clean namesapce. The only data that exists there is what's passed into the function
+	1. clojure with python
+	1. Identify taksks you need, write functions for those tasks.
+	1. important to replication
+		1.  view analyssis as starting with dtaset and applying series of trnasformational funciotns ont he dataset.  then if there's an error, you make a change to a smaller function and run the whole thing again.
+		1. starts the basis of a data analysis library
+1. GIT
+	1. in habit of using version control.  makes you think: what trying to accomplish? get that done, works, commit that thing.  allows us to go back to any specific set.
+	1. make notes on which version was used to generate results.
+		
+		
+
+

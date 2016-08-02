@@ -1,0 +1,114 @@
+---
+title       : Reproducible Research Checklist
+subtitle    : What to Do and What Not to Do
+author      : Roger D. Peng, Associate Professor of Biostatistics
+job         : Johns Hopkins Bloomberg School of Public Health
+logo        : bloomberg_shield.png
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+url:
+  lib: ../../libraries
+  assets: ../../assets
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+---
+
+
+#### Summary: Checklist
+
+1. Are we doing good science?
+1. Was any part of this analysis done by hand?
+    1. If so, are those parts *precisely* document?
+    1. Does the documentation match reality?
+1. Have we taught a computer to do as much as possible (i.e. coded)?
+1. Are we using a version control system?
+1. Have we documented our software environment?
+1. Have we saved any output that we cannot reconstruct from original data + code?
+1. How far back in the analysis pipeline can we go before our results are no longer (automatically) reproducible?
+
+
+#### Reproducible Research Checklist
+
+1. **DO: Start With Good Science**
+    1. Garbage in, garbage out
+    1. Coherent, focused question simplifies many problems
+    1. Working with good collaborators reinforces good practices
+    1. Something that's interesting to you will (hopefully) motivate good habits
+
+1. **DON'T: Do Things By Hand**
+    1. Editing spreadsheets of data to "clean it up"
+        1. Removing outliers
+        1. QA / QC
+        1. Validating
+    1. Editing tables or figures (e.g. rounding, formatting)
+    1. Downloading data from a web site (clicking links in a web browser)
+    1. Moving data around your computer; splitting / reformatting data files
+    1. "We're just going to do this once...."  Things done by hand need to be precisely documented (this is harder
+    than it sounds)
+
+1. **DON'T: Point And Click**
+    1. Many data processing / statistical analysis packages have graphical user interfaces (GUIs)
+    1. GUIs are convenient / intuitive but the actions you take with a GUI can be difficult for others to reproduce
+    1. Some GUIs produce a log file or script which includes equivalent commands; these can be saved for later examination
+    1. In general, be careful with data analysis software that is highly *interactive*; ease of use can sometimes lead to non-reproducible analyses
+    1. Other interactive software, such as text editors, are usually fine
+
+1. **DO: Teach a Computer**
+    1. If something needs to be done as part of your analysis / investigation, try to teach your computer to do it (even if you only need to do it once)
+    1. In order to give your computer instructions, you need to write down exactly what you mean to do and how it should be done
+    1. Teaching a computer almost guarantees reproducibilty. 
+    1. **For example**, 
+        1. *by hand*, you can :
+            1. Go to the UCI Machine Learning Repository at  http://archive.ics.uci.edu/ml/
+            2. Download the [Bike Sharing Dataset](http://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset)  by clicking on the link to the Data Folder, then clicking on the  link to the zip file of dataset, and choosing "Save Linked File  As..." and then saving it to a folder on your computer
+        1. Or You can *teach your computer* to do the same thing using R:
+```r
+download.file("http://archive.ics.uci.edu/ml/machine-learning-databases/00275/
+               Bike-Sharing-Dataset.zip", "ProjectData/Bike-Sharing-Dataset.zip")
+```
+        1. Notice here that
+            1. The full URL to the dataset file is specified (no clicking through a series of links)
+            1. The name of the file saved to your local computer is specified
+            1. The directory in which the file was saved is specified ("ProjectData")
+            1. Code can always be executed in R (as long as link is available)
+
+1. **DO: Use Some Version Control**
+    1. Slow things down
+    1. Add changes in small chunks (don't just do one massive commit)
+    1. Track / tag snapshots; revert to old versions
+    1. Software like GitHub / BitBucket / SourceForge make it easy to publish results
+
+1. **DO: Keep Track of Your Software Environment**
+    1. If you work on a complex project involving many tools / datasets, the software and computing environment can be critical for  reproducing your analysis
+    1. **Computer architecture**: CPU (Intel, AMD, ARM), GPUs, 
+    1. **Operating system**: Windows, Mac OS, Linux / Unix
+    1. **Software toolchain**: Compilers, interpreters, command shell, programming languages (C, Perl, Python, etc.), database backends, data analysis software
+    1. **Supporting software / infrastructure**: Libraries, R packages,  dependencies
+    1. **External dependencies**: Web sites, data repositories, remote databases, software repositories
+    1. **Version numbers**: Ideally, for everything (if available)
+  
+1. **DO: Keep Track of Your Software Environment**
+```{r}
+sessionInfo()
+```
+
+1. **DON'T: Save Output**
+    1. Avoid saving data analysis output (tables, figures, summaries, processed data, etc.), except perhaps temporarily for efficiency purposes.
+    1. If a stray output file cannot be easily connected with the means by which it was created, then it is not reproducible.
+    1. Save the data + code that generated the output, rather than the output itself
+    1. Intermediate files are okay as long as there is clear documentation of how they were created
+
+1. **DO: Set Your Seed**
+    1. Random number generators generate pseudo-random numbers based on an initial seed (usually a number or set of numbers)
+        1. In R you can use the `set.seed()` function to set the seed and to  specify the random number generator to use
+    1. Setting the seed allows for the stream of random numbers to be  exactly reproducible
+    1. Whenever you generate random numbers for a non-trivial purpose,  **always set the seed**
+
+1. **DO: Think About the Entire Pipeline**
+    1. Data analysis is a lengthy process; it is not just tables / figures  / reports
+    1. Raw data &rarr; processed data &rarr; analysis &rarr; report
+    1. How you got the end is just as important as the end itself
+    1. The more of the data analysis pipeline you can make reproducible,  the better for everyone
+
+

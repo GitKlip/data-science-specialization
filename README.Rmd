@@ -84,7 +84,7 @@ Learned and applied linear regression models for prediction.  Topics learned: re
 ##Practical Machine Learning
 Applied the basic components of building and applying prediction functions. Created training and tests sets while dealing with overfitting and error rates. Used various machine learning algorithms including regression, classification trees, Naive Bayes, and random forests through the complete process of building prediction functions including data collection, feature creation, algorithms, and evaluation.
 
-**Project:** [Quality Classificationa of Human Exercises](./08-MachineLearning/projects/ML_Project.pdf) | [Source](./08-MachineLearning/projects/ML_Project.Rmd)  
+**Project:** [Quality Classification of Human Exercises](./08-MachineLearning/projects/ML_Project.pdf) | [Source](./08-MachineLearning/projects/ML_Project.Rmd)  
 **Certificate:** [Pratical Machine Learning](https://www.coursera.org/account/accomplishments/certificate/9DKPUF8BF4EU)  
 
 

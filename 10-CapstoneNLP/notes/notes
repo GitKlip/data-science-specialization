@@ -1,0 +1,17 @@
+Text Manipulation commands
+    sub
+    gsub
+    grep
+    grepl
+
+--------------------
+https://eight2late.wordpress.com/2015/05/27/a-gentle-introduction-to-text-mining-using-r/
+tm – the text mining package (see documentation). Also check out this excellent introductory article on tm.
+SnowballC – required for stemming (explained below).
+ggplot2 – plotting capabilities (see documentation)
+wordcloud – which is self-explanatory (see documentation) .
+
+
+---------------------------
+tm intro: https://cran.r-project.org/web/packages/tm/vignettes/tm.pdf
+tm docs: https://cran.r-project.org/web/packages/tm/tm.pdf

@@ -1,2 +1,1 @@
-"adding a test line" 
-one more line
+This is the home of the capstone project readme.  Comming Soon.

@@ -1,0 +1,260 @@
+---
+title: "Exploratory Analysis of HC Corpora"
+author: "Erik Cornelsen"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 6
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    fig_caption: yes
+subtitle: "Data Science Specialization - Capstone Project Milestone Report"
+setspace: single
+---
+
+```{r setup, include=FALSE, cache=FALSE}
+
+# The goal of this project is just to display that you've gotten used to working with the data and that you are on track to create your prediction algorithm. Please submit a report on R Pubs (http://rpubs.com/) that explains your exploratory analysis and your goals for the eventual app and algorithm. This document should be concise and explain only the major features of the data you have identified and briefly summarize your plans for creating the prediction algorithm and Shiny app in a way that would be understandable to a non-data scientist manager. You should make use of tables and plots to illustrate important summaries of the data set. The motivation for this project is to: 
+# 1. Demonstrate that you've downloaded the data and have successfully loaded it in.
+# 2. Create a basic report of summary statistics about the data sets.
+# 3. Report any interesting findings that you amassed so far.
+# 4. Get feedback on your plans for creating a prediction algorithm and Shiny app.
+
+# Review criteria 
+# Does the link lead to an HTML page describing the exploratory analysis of the training data set?
+# Has the data scientist done basic summaries of the three files? Word counts, line counts and basic data tables?
+# Has the data scientist made basic plots, such as histograms to illustrate features of the data?
+# Was the report written in a brief, concise style, in a way that a non-data scientist manager could appreciate?
+
+#Peer Reviews
+# Mine: http://rpubs.com/ercorne/207386
+# http://rpubs.com/pellurubala/MilestoneReport1
+# http://rpubs.com/frankLa/milestoneReport
+# http://rpubs.com/Yo828/Milestone
+# http://rpubs.com/ml-fan/139151
+
+setwd("~/Analysis/data-science-specialization/10-CapstoneNLP/nlp_project")
+# read_chunk('src/utils.R')
+library('knitr')
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE, cache.path = './cache/knitrcache/')
+
+library(stringi)
+library(plyr)
+library(quanteda) #used for text analysis
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(RColorBrewer) # used for coloring the word cloud
+```
+
+```{r init, include=FALSE, cache=FALSE}
+### INITIALIZE
+N <- -1
+PCT <- .1
+blnSTEM <- FALSE
+argSTOP <- NULL #stopwords('SMART'))
+source_files <- c("./data/final/en_US/en_US.blogs.txt","./data/final/en_US/en_US.news.txt","./data/final/en_US/en_US.twitter.txt")
+cache_raw_save_file <- sprintf("./cache/nlpCache_RAW_N%d_P%d.RData",N,PCT*100)
+cache_data_save_file <- paste0("./cache/nlpCache_DATA_N",N,"_P",PCT,"_STM",blnSTEM,"_STP",as.logical(argSTOP),".RData")
+
+if(exists(cache_data_save_file)){ 
+    load(cache_data_save_file) 
+} else { 
+    source('./src/02-GetAndCleanData.R') 
+}
+
+```
+
+#Exploratory Analysis of the Corpus
+
+
+##Introduction
+
+The goal of the project is to predict the next word after being given some text input. This analysis explores the data that will be used to train the prediction model and lays out some potential next steps.
+
+A [training dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) has been provided, containing a sample corpus of text in different languages. Details about this training corpus can be found at the original source [HC Corpora](http://www.corpora.heliohost.org/) (see the [Corpus README](http://www.corpora.heliohost.org/aboutcorpus.html) for more details).
+
+The english training set is made up of three files, each from a different source (blogs, news sites, and twitter).  Within each file every line is an extract from a single post/article/tweet.  Here is some basic info on the sentence, word, and character counts of each data file.
+
+```{r data.stats, echo=F,results='asis',error=F,warning=F}
+# eval=run code? , include=show code or results?, collapse=code+results together?,echo=display results?,
+# results={markup=, asis=, hold=, hide=}
+
+load('./cache/data.stats.full', verbose = FALSE)
+knitr::kable(data.stats, format = "markdown", digits = 2)
+
+```
+
+The blogs and news data seem similar in average sentances, words, and characters (though blogs are slightly larger).  Twitter, as we'd expect is much shorter but much more frequent.
+
+##Cleanup and Tokenization
+
+In order to make sensible predictions of the next word, we need to perform some cleaning of the texts. 
+    
+**Punctuation** - The files contain some Unicode characters (e.g. typographic single or double quotation marks), emoticons like “:)”, hashtags, URLs, and other non-word elements. Since we want to predict words, not punctuation, we'll need to strip punctuation But there are also words like "let's" and "we'll" with punctuation that we'll want to treat as distinct, independent words.
+
+**Foreign Language** - Other languages that may have words mixed into the english corpus. A decision was made to do not filter out forign words under the premise that any foreign words that are frequent enough to have meaningful impact on the output are likely of common usage and should therefore be included in the prediction model. If we did want to identify forign words we could use an english-only dictionary to identify and remove any non-english words.
+
+**Word Removal or Modification** - Because our model will try to predict the next complete word it will depend on knowing the full word and their order.  Because of this, we do not want to apply 'stemming' or 'stop word' removal.  (these are usual preprocessing in general natural language processing).  It is also the reason we choose not to apply a Thesaurus or Dictionary at this time.
+
+**Dirty Words** - Optionally, one could filter problematic words at this stage (like profanity) — I opted against this step at this time but may revisit that decision. 
+
+Following is the word processing we do for this first rough pass.
+
+1. lowercasing
+1. tokenizing
+    + remove numbers
+    + remove punctuation
+    + remove/condense white space
+    + remove url's  URLs (mainly everything that contains “://”)
+    + remove twitter hashtags (starts with “#” or "@")
+1. indexing documents and features
+1. create a sparse dfm
+
+**Sampling** - To speed up the analysis we will only process a small random sample of the whole corpus. After cleaning each text line, we collect them in a corpus structure of the package quanteda, that is also used to tokenize the text and to build ngrams.  *NOTE* that this clean-up is not foolproof (maybe not all URLs are stripped or something is falsely matched by the URL pattern, the text contains typographical errors, quotation marks symbolizing the unit inch are stripped, etc.), but the erroneous text parts left should be marginal and not hurt the learning process too much.
+
+##Basic Statistics
+
+The sample we use for this analysis is 10% of the full source files.  Here are some basic stats:
+```{r sample.stats, echo=F,results='asis',error=F,warning=F}
+df<-data.summary # data.summary[,c(2,4,7,10)]
+knitr::kable(df, format = "markdown", digits = 2)
+```
+
+A wordcloud gives a first impression of the frequent features/words that appear in the sampled texts:
+```{r wordcloud, eval=T, echo=F, results='asis', warning=F, message=F, fig.width=4, fig.height=4}
+plot(corpi.dfm.ng1, max.words = 100,  colors = brewer.pal(6, "Dark2") )
+```
+
+Looking at some histograms of the top features we see that a few features/words (like "the", "to", "a", etc) account for a large portion of the total words. There is a very long tail as we look at more meaningful words.
+```{r topFeaturesHistogram, eval=T, echo=F, results='asis', warning=F}
+library(scales)
+plotTopFeatures <- function(myDfm, n=20){
+    top <- topfeatures(myDfm, n)
+    df <- data.frame( key=names(top), value=top )
+
+    p <- ggplot(df, aes(x=reorder(key,value), y=value)) +
+        geom_bar(stat='identity') +
+        scale_y_continuous(name="Word Count", labels = comma) +
+        coord_flip() +
+        theme_bw() +
+        labs(y = "Word Counts", x = "Top Words")
+        ggtitle(paste("Top",n,"for",deparse(substitute(myDfm))))
+    return(p)
+}
+plotTopFeatures(corpi.dfm.ng1, n=50)
+
+```
+
+
+As expected, histograms of the N-Grams (BiGrams and Trigrams) show a similar distribution with very long tails. An attempt was made to create 4-Grams and 5-Grams but the effort consumed all available CPU and Memory and so was discarded.
+
+```{r nGramHistograms, eval=T, echo=F, results='asis', fig.width=7, fig.height=5, warning=F}
+p2 <- plotTopFeatures(corpi.dfm.ng2, n=50)
+p3 <- plotTopFeatures(corpi.dfm.ng3, n=50)
+grid.arrange(p2, p3, ncol = 2)
+```
+
+```{r NgramTable, eval=F, include=F, echo=F, results='asis', warning=F}
+# Here is a table showing the top 20 words for 1-Grams, 2-Grams, and 3-Grams.  
+#Print a nice table of the top 20 words/ngrams for each dfm
+l<-sort(ls(pattern="corpi.dfm.ng*"))
+n<-length(l)
+a <- list(0)
+for(i in 1:n) {
+    a[i] <- list(names(topfeatures(get(l[i]), 20)))
+    i<-i+1
+}
+df <-   data.frame(matrix(unlist(a), nrow=length(unlist(a[1]))),stringsAsFactors=FALSE)
+colnames(df) <- l
+knitr::kable(df, format = "markdown", digits = 2)
+
+```
+
+
+The following plot shows how many words it takes to cover a certain percentage of all the words in the corpus at 50%, 80%, and 90% coverage levels.  
+
+```{r cumPercentCoverage, eval=T, echo=F, results='asis', warning=F}
+#Create Data Frame with data.  tokens (total features/words) or types (unique features/words)
+myDfm <- corpi.dfm.ng1
+top <- topfeatures(myDfm, n=length(features(myDfm))) # Get all features and their wordcounts
+df <- data.frame( keys=names(top), wrdCnt=top, cumKey=1:length(top), cumPct=(cumsum(top)/sum(top)) )
+
+#function to lookup in df to find closest value.  if equates to 0 then is an exact match.  closest to 0 will give the best match.
+getXfromY <- function(Y){df[ which.min(abs(df$cumPct-Y)),  "cumKey"] }
+
+ggplot(df, aes(x=cumKey, y=cumPct)) +  geom_line(colour="black") + theme_bw() +
+    #lookup the Xintercepts in df to create the vlines
+        geom_vline( xintercept=getXfromY(.50), linetype="longdash", colour="green", show.legend = TRUE) + 
+        geom_vline( xintercept=getXfromY(.80), linetype="longdash", colour="blue", show.legend = TRUE) + 
+        geom_vline( xintercept=getXfromY(.90), linetype="longdash", colour="red", show.legend = TRUE) + 
+    scale_x_continuous(limits =c(NA,8000)) +  #cut the graph short on the right.
+    labs(x = "Total Features", y = "Cumulative % of Corpus Coverage" ) + 
+    ggtitle("Cumulative % of Corpus Coverage by Total Features")
+```
+
+We see that ```r getXfromY(.50)``` features/words account for 50% of all the corpus text, ```r getXfromY(.80)``` are needed for 80%, and ```r getXfromY(.90)``` are needed for 90%.  The graph is deliberatly cut off shortly after 90% for readability as the tail extends for quite a ways.
+
+##Initial Conclusions
+
+1. We've seen that a majority of the corpus is covered with relativley few words.  This leads to a long tail in the distribution of top words and means that many words are very seldom seen in the corpus.
+1. Our model will need to make reasonable predictions on the next words without a lot of overhead.  One approach would be to keep the most frequent 1-Grams, 2-Grams, and 3-Grams and then drop the less frequent words out of the model.  More work would need to be done to determine what that cutoff point should be but my initial guestimate would be about 80%. This should also reduce the memory requirements considerably.
+1. We observed With the summary statistics that twitter texts are significantly different from the other two sources in average length and frequency.  Additional investigation showed that the twitter texts also contain many more special cases (hastags, abbreviations, slang, emoticons, etc.).  It might be worth experimenting on models that include or exclude the twitter texts.
+1. While I initially intended to apply stopwords and stemming, it is not appropriate for this use case where we are trying to predict a full word.  Dictionary/Thesaurus replacement might be used but would require great care.
+1. This analysis was done across all three text sources, similar analysis should be done within each source to see if there are any siginificant features/differences that might be useful.
+1. While not shown in this analysis, when stopwords are removed, the siginificant words become very different.
+
+##Next Steps
+
+1. The next step is to build a predictive model that will run in a prediction application. To achieve good performance in the application, one important concern is the memory usage so some pruning of the model seems to be required. 
+1. An N-gram based model seems the natural first step. While these models have the drawback that they are not able to represent long distance relationships (e.g. a verb at the end of a sentence corresponding the a noun at the beginning) they still should yeild good results.  I plan to use 2-grams, 3-grams and the top 4-grams.  I believe 5-grams would be to resouce intensive.
+1. To handle unknown or new words that aren't in the training set I have two ideas to explore
+    + Implement a synonym dictionary might be useful approach.  This technique could also be used to reduce the size of the model by replaceing low frequency words with higher frequency alternatives.
+    + filter out stopwords while building the model.  If unable to predict the next word with confidence, then offer some of the most frequently occuring stopwords as options.
+1. A profanity filter should be put in place.
+
+
+#Appendix
+##Sources
+
+###Download and Unzip Data
+```{r download, code=readLines('./src/01-DownloadData.R'), eval=F }
+```
+
+###Extract and Process Data (Sample, Tokenize, Calculate Basic Stats)
+```{r process, code=readLines('./src/02-GetAndCleanData.R'), eval=F}
+source()
+```
+
+###Plot Wordcloud
+```{r wordcloud, eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```
+
+###Plot Top Features
+```{r topFeaturesHistogram, eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```
+
+###Calculate & Plot Coverage
+```{r cumPercentCoverage, eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```
+
+###Plot Top N-grams
+```{r nGramHistograms, eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```
+
+###Script ‘utils.R’
+```{r src.utils, code=readLines('./src/utils.R'), eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```
+
+##Session Environment
+```{r sessionInfo, eval=T, collapse=T}
+sessionInfo()
+```

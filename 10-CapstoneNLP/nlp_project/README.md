@@ -1,12 +1,12 @@
 #Data Science Specialization - Capstone Project 
 ##Natural Language Processing
 
-<img src="./figures/capstone-sponsors.png" alt="Course Sponsors" "/>
+<img src='./figures/capstone-sponsors.png' alt='Course Sponsors' />
 
 ###Objective
 The objective of the capstone project was to build a predictive model and implement a web app that predicts the next word when a user enters a phrase.
 
-<img src="./figures/swiftKey-splash-2.jpg" alt="Context Image" style="width: 200px;"/>
+<img src='./figures/swiftKey-splash-2.jpg' alt='Context Image' style='width: 200px;'/>
 
 ###Take Aways
 * Natural Language Processing is challenging and fun.

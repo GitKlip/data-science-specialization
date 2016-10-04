@@ -1,0 +1,9 @@
+name: NLP_Text_Predictor
+account: cornelsen
+server: shinyapps.io
+appId: 129249
+bundleId: 575275
+url: https://cornelsen.shinyapps.io/NLP_Text_Predictor/
+when: 1475512919.3022
+asMultiple: FALSE
+asStatic: FALSE

@@ -41,7 +41,6 @@ setspace: single
 # http://rpubs.com/ml-fan/139151
 
 setwd("~/Analysis/data-science-specialization/10-CapstoneNLP/nlp_project")
-# read_chunk('src/utils.R')
 library('knitr')
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE, cache.path = './cache/knitrcache/')
@@ -64,11 +63,10 @@ argSTOP <- NULL #stopwords('SMART'))
 source_files <- c("./data/final/en_US/en_US.blogs.txt","./data/final/en_US/en_US.news.txt","./data/final/en_US/en_US.twitter.txt")
 cache_raw_save_file <- sprintf("./cache/nlpCache_RAW_N%d_P%d.RData",N,PCT*100)
 cache_data_save_file <- paste0("./cache/nlpCache_DATA_N",N,"_P",PCT,"_STM",blnSTEM,"_STP",as.logical(argSTOP),".RData")
-
 if(exists(cache_data_save_file)){ 
     load(cache_data_save_file) 
 } else { 
-    source('./src/02-GetAndCleanData.R') 
+    source('./milestone_src/02-GetAndCleanData.R') 
 }
 
 ```
@@ -226,12 +224,11 @@ We see that ```r getXfromY(.50)``` features/words account for 50% of all the cor
 ##Sources
 
 ###Download and Unzip Data
-```{r download, code=readLines('./src/01-DownloadData.R'), eval=F }
+```{r download, code=readLines('./milestone_src/01-DownloadData.R'), eval=F }
 ```
 
 ###Extract and Process Data (Sample, Tokenize, Calculate Basic Stats)
-```{r process, code=readLines('./src/02-GetAndCleanData.R'), eval=F}
-source()
+```{r process, code=readLines('./milestone_src/02-GetAndCleanData.R'), eval=F}
 ```
 
 ###Plot Wordcloud
@@ -251,7 +248,7 @@ source()
 ```
 
 ###Script ‘utils.R’
-```{r src.utils, code=readLines('./src/utils.R'), eval=F, echo=T, tidy.opts=list(comment=FALSE)}
+```{r src.utils, code=readLines('./milestone_src/utils.R'), eval=F, echo=T, tidy.opts=list(comment=FALSE)}
 ```
 
 ##Session Environment

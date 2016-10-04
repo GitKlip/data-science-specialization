@@ -1,0 +1,123 @@
+<!--
+(1) explain how your model works,
+(2) describe its predictive performance quantitatively and
+(3) show off the app and how it works.
+- How can you briefly explain how your predictive model works?
+- How can you succinctly quantitatively summarize the performance of your prediction algorithm?
+- How can you show the user how the product works?
+
+
+
+# CRITERIA: Slide Deck
+# - Does the link lead to a 5 slide deck on R Pubs?
+# - Does the slide deck contain a description of the algorithm used to make the prediction?
+# - Does the slide deck describe the app, give instructions, and describe how it functions?
+# - How would you describe the experience of using this app?
+# - Does the app present a novel approach and/or is particularly well done?
+# - Would you hire this person for your own data science startup company?
+#
+
+
+https://demo.clab.cs.cmu.edu/sp2013-11731/slides/15.decoding.pdf
+    - count ngrams offline, calculate pseudo prob at runtime
+    - if lastWordCnt>0 then
+    - if lastWordCnt=0
+TODO:
+- Add Transitions to slides
+- add word cloud to app?
+- Include a separate tab in the app that more fully explains instructions, what it's doins, options
+- add word completion option?
+
+Based on Stupid Backoff > Link to paper:
+    http://www.aclweb.org/anthology/D07-1090.pdf
+    http://www.cs.columbia.edu/~smaskey/CS6998-0412/supportmaterial/langmodel_mapreduce.pdf
+
+-->
+
+
+
+Data Science Specialization: NLP Capstone Project
+========================================================
+author: Erik Cornelsen
+date: 10/1/2016
+autosize: true
+transition: rotate
+
+<br/>
+![Course Sponsors](./figures/capstone-sponsors.png)
+
+
+
+Capstone Project Objective
+========================================================
+Build a model and web app that predicts the next word when a user enters a phrase.
+
+![Swiftkey Image](./figures/swiftKey-splash-2.jpg)
+
+***
+
+**How the Model was built:**
+* Sample 30% of 3 million text samples
+* Filter out url's, punctuation, & profanity
+* Tokenize text into N-grams. Trim ngrams.
+* Include 3M top n-grams from external sources
+* Build condensed lookup tables to drive prediction algorithm
+
+
+N-Gram Prediction Model
+========================================================
+
+**How the Model Works:**
+* The model implemented was based on the [Stupid Backoff Model](http://www.aclweb.org/anthology/D07-1090.pdf). It is inexpensive to calculate and approaches the accuracy of more complicated models when very large text sources are used.
+* The app extracts and searches for the last 3 words that the user typed: 'How are you doing' > [are you doing]. Top 5 matches based on frequencey are returned.
+* If no matches on 3 words, then backoff to search for 2 words [you doing]. Return top 5 results.
+* If no matches on 2 words, then backoff to search for 1 word [doing]. Return top 5 results.
+* If no matches on 1 words, then return overall top 5 individual words.
+
+
+
+
+
+Model Performance
+========================================================
+
+The stupid backoff model cannot use the measure of perplexity, but we can still measuer the accuracy.
+* Create a test set by sampling ~1500 rows from the data set, ensuring that they were not part of the training data.
+* Predict the next word and return the top X results
+* Compare the expected answer with the prediction answers to determine accuracy
+
+
+    Top X Predictions | % Accuracy
+    -------------------|-------------------------
+    1 predicted word            | 11 %
+    3 predicted words	        | 22 %
+    5 predicted words	        | 27 %
+    10 predicted words	        | 35 %
+
+
+
+Application Usage & Additional Info
+========================================================
+
+**Relevant Links:**
+* [Web App](https://cornelsen.shinyapps.io/NLP_Text_Predictor/) Developed in 'Shiny' and published via shinyapps.io
+* [Source Code](https://github.com/GitKlip/data-science-specialization/tree/master/10-CapstoneNLP) for the project in GitHub
+* [Milestone Analysis Report](http://rpubs.com/ercorne/ds_capstone_milestone) performed in 'R' and published via RPubs
+* Redundant Link to [this Presentation](http://rpubs.com/ercorne/ds_capstone_presentation)
+
+***
+
+**Application Usage:**
+* Begin entering a sentance into the input box
+* App will provide a prediction of the next word(s)
+* Optional - you can adjust how many word predictions are created using the slider
+
+![App Screenshot](./figures/shiny-app-screenshot.PNG)
+
+
+
+
+
+
+
+

@@ -1,0 +1,326 @@
+---
+title: "PredictionModel Musings"
+author: "Erik Cornelsen"
+date: "September 7, 2016"
+output: html_document
+---
+
+# OBJECTIVE
+The goal of this exercise is to build and evaluate your first predictive model. You will use the n-gram and backoff models you built in previous tasks to build and evaluate your predictive model. The goal is to make the model efficient and accurate.
+
+## Tasks to accomplish
+1. Build a predictive model based on the previous data modeling steps - you may combine the models in any way you think is appropriate.
+1. Evaluate the model for efficiency and accuracy - use timing software to evaluate the computational complexity of your model. Evaluate the model accuracy using different metrics like perplexity, accuracy at the first word, second word, and third word.
+    + profiler, system.time(), microbenchmark 
+    + ?perplexity? https://en.wikipedia.org/wiki/Perplexity
+
+## Questions to consider
+1. what is an 'ngram model' and a 'backoff model'
+1. How does the model perform for different choices of the parameters and size of the model?
+1. How much does the model slow down for the performance you gain?
+1. Does perplexity correlate with the other measures of accuracy?
+1. Can you reduce the size of the model (number of parameters) without reducing performance?
+    + Start with 80% coverage, time it.  bump up to 90% and time it
+
+##Constraints on Objective
+As you develop your prediction model, two key aspects that you will have to keep in mind are the size and runtime of the algorithm. Your goal for this prediction model is to minimize both the size and runtime of the model in order to provide a reasonable experience to the user.  These are defined as:
+
+* Size: the amount of memory (physical RAM) required to run the model in R
+* Runtime: The amount of time the algorithm takes to make a prediction given the acceptable input
+
+Keep in mind that currently available predictive text models can run on mobile phones, which typically have limited memory and processing power compared to desktop computers. Therefore, you should consider very carefully (1) how much memory is being used by the objects in your workspace; and (2) how much time it is taking to run your model. Ultimately, your model will need to run in a Shiny app that runs on the shinyapps.io server.
+
+##Tips, tricks, and hints
+Here are a few tools that may be of use to you as you work on their algorithm:
+
+* object.size(): this function reports the number of bytes that an R object occupies in memory
+* Rprof(): this function runs the profiler in R that can be used to determine where bottlenecks in your function may exist. The profr package (available on CRAN) provides some additional tools for visualizing and summarizing profiling data.
+* gc(): this function runs the garbage collector to retrieve unused RAM for R. In the process it tells you how much memory is currently being used by R.
+
+There will likely be a tradeoff that you have to make in between size and runtime. For example, an algorithm that requires a lot of memory, may run faster, while a slower algorithm may require less memory. You will have to find the right balance between the two in order to provide a good experience to the user.
+
+## RESEARCH
+* LSA
+    + http://www.cslu.ogi.edu/~sproatr/Courses/AAC/Slides/Mahsa_Presentation.pdf
+    + Latent Semantic Analysis (LSA) using linear interpolation and confidence weighting 
+    + GI, CWGI, High savings for 5gram, and low perplexity
+* NGram Model
+    + ngram: https://cs.stanford.edu/people/eroberts/courses/soco/projects/2004-05/nlp/techniques_word.html
+    + If you're looking for what words follow "a case of", you could combine three different probabilities: Words that follow "of", words that follow "case of" and words that follow "a case of" - each given different weights based on their relative probabilities.
+* Backoff Model (type of smoothing)
+    + https://en.wikipedia.org/wiki/Katz%27s_back-off_model
+    + http://l2r.cs.uiuc.edu/~danr/Teaching/CS546-09/Lectures/Lec5-Stat-09-ext.pdf
+* ?Part of speach tagging model?
+* Research quanteda textmodel options c("wordscores", "NB", "wordfish", "ca")
+* **USE THIS:** http://www.cs.columbia.edu/~kathy/NLP/ClassSlides/Class3-ngrams09/ngrams.pdf
+    + **BERP Bigram Probabiliities:** divide each bigram count by the unigram count for the known word. Maximum Likelihood Estimation (MLE) is P(want|I)=count(i_want)/count(I) = freq(w1,w2)/freq(w1)
+    + **Information Metrics:** Useful in measuring how well a grammar or language model (LM) models a natural language or a corpus
+    + **Perplexity:** At each choice point in a grammar or LM, what are the average number of choices that can be made, weighted by their probabilities of occurence? How much probability does a LM(1) assign to the sentences of a corpus, compared to another LM(2)?
+    + **Entropy:**
+    + Smoothing and Backoff : how do you handle unseen n-grams?
+        - Smoothing: steal some probability from ngrams that have some and give it to ngrams that have none
+        - AddOne smoothing 1gram: 
+    + Perplexity and entropy: how do you estimate how well your language model fits a corpus once you’re done?
+    
+    
+## IDEAS TO TRY
+1. Baseline Model: Ngram(2&3) + Backoff(for smoothing)
+    + model with 2grams and 3grams to predict next word. 
+    + Backoff Smoothing(p34): http://l2r.cs.uiuc.edu/~danr/Teaching/CS546-09/Lectures/Lec5-Stat-09-ext.pdf
+        - For a given bigram, we count the number of times it occurs, and divide by the number of all bigrams with the same history (same first word)
+        - The idea in a Backoff model is to build an Ngram model based on an (N-1)gram model. If we have zero counts for Ngrams, we Back off to (N-1)grams. If there is a non-zero count there, we stop and rely on it
+    + prediction with quanteda
+        - Trim: http://rpackages.ianhowson.com/cran/quanteda/man/trim.html
+        - Model: http://rpackages.ianhowson.com/cran/quanteda/man/textmodel.html
+        - Predict: http://rpackages.ianhowson.com/cran/quanteda/man/predict.textmodel.html
+        - TermFreq: http://rpackages.ianhowson.com/cran/quanteda/man/tf.html
+    + no synonym dictionary
+    + no stemming
+    + no profanity filter
+    + 10% sample of all 3 data sources
+    + quanteda prediction: https://github.com/kbenoit/quanteda/issues/46
+1. Experiments
+    + Add 4grams
+    + Profanity Filter
+    + synonym Dictionary:   http://rpackages.ianhowson.com/cran/quanteda/man/dictionary.html, applyDictionary.html
+    + increase sample size when building model
+    + remove stopwords, use 'the' if can't predict.
+    + Use Latent Semantic Analysis (LSA) with CWGI
+    + Part of speach tagging?
+    + use skipwords
+    + Apply different smoothing
+    + Good-Turing Smoothing (p26): Key idea is to re-estimate the amount of probability mass to assign to Ngrams with low counts by looking at the number of Ngrams of higher counts.  Specifically, judge rate of 0-count events by rate of 1-count events
+
+
+This is the first, really poor, attempt.  It essentially looks for matches in the ngrams and uses counts of those ngrams to handle multiple matches.
+```{r nGramMatchAndCount, eval=T,include=T,echo=T,collapse=T}
+
+setwd("~/Analysis/data-science-specialization/10-CapstoneNLP/nlp_project/")
+library(quanteda)
+library(data.table)
+library(stringr)
+library(stringi)
+library(plyr)
+source('./TextPredictor-DataPrep/utils.R')
+
+
+#GLOBAL & CONTROL VARIABLES
+VERBOSE <- TRUE
+SAMPLE_N <- as.integer(-1) #number of lines to read from the raw data
+SAMPLE_PCT <- .3  # Percentage of lines to keep/sample from SAMPLE_N.  0.1=10%, 0.4=40%
+NOBADWORDS <- TRUE
+blogs_filename <- "./data/final/en_US/en_US.blogs.txt"
+news_filename <- "./data/final/en_US/en_US.news.txt"
+twitter_filename <- "./data/final/en_US/en_US.twitter.txt"
+prefix <- paste0("./cache/",SAMPLE_N,"rows_",SAMPLE_PCT*100,"pct_")
+cache_raw_filename <- paste0(prefix,"raw.RData")
+cache_cps_filename <- paste0(prefix,"corpi.RData")
+cache_dfm_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","dfm.RData")
+cache_dfm1_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","dfm1.RData")
+cache_dfm2_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","dfm2.RData")
+cache_dfm3_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","dfm3.RData")
+cache_dfm4_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","dfm4.RData")
+cache_DT_filename <- paste0(prefix,"nobad",NOBADWORDS,"_","DT.RData")
+badwords_filename <- './data/profanity/merged_bad_words.txt'
+coca_n2_filename <- './data/COCA_ngrams/w2_.txt'
+coca_n3_filename <- './data/COCA_ngrams/w3_.txt'
+coca_n4_filename <- './data/COCA_ngrams/w4_.txt'
+
+
+### READ/SAMPLE RAW DATA
+if (!file.exists(cache_raw_filename)) {
+     blogs.raw <- readDataFile2(blogs_filename, nLines = SAMPLE_N, samplePct=SAMPLE_PCT, verbose=VERBOSE)
+     news.raw <- readDataFile2(news_filename,  nLines = SAMPLE_N, samplePct=SAMPLE_PCT, verbose=VERBOSE)
+     twitter.raw <- readDataFile2(twitter_filename, nLines = SAMPLE_N, samplePct=SAMPLE_PCT, verbose=VERBOSE)
+    if(VERBOSE) print(paste("Saving:",cache_raw_filename))
+    save( blogs.raw, news.raw, twitter.raw, file=cache_raw_filename)
+} else {
+    load(cache_raw_filename, verbose=VERBOSE)
+}
+
+
+### CREATE CORPI ###
+if (!file.exists(cache_cps_filename)) {
+
+    blogs.cps <- corpus(blogs.raw)
+    news.cps <- corpus(news.raw)
+    twitter.cps <- corpus(twitter.raw)
+    corpi <- blogs.cps + news.cps + twitter.cps
+
+    if(VERBOSE) print(paste("Saving:",cache_cps_filename))
+    save(corpi, file=cache_cps_filename)
+    rm(blogs.raw,news.raw,twitter.raw, blogs.cps, news.cps, twitter.cps)
+
+} else {
+    load(cache_cps_filename, verbose=VERBOSE)
+    rm(blogs.raw,news.raw,twitter.raw, blogs.cps, news.cps, twitter.cps)
+
+}
+
+
+
+### CREATE DFM. TRIM. REMOVE BADWORDS. LOAD EXTERNAL NGRAMS. ###
+if (!file.exists(cache_dfm_filename)) {
+    
+    if(NOBADWORDS){ 
+        # if(VERBOSE) print(paste("Filtering Bad Words"))
+        badwords <- readDataFile(badwords_filename)
+    } else {
+        badwords <- NULL
+    }
+
+    makeDFM <- function(corpus,N,badwords=NULL){
+        system.time(
+            myDFM <- dfm(corpus,ngrams=N, concatenator=" ", toLower=T, removeNumbers=T, 
+                         removePunct=T, removeSeparators=T, removeURL=T, removeTwitter=T, 
+                         stem = F, ignoredFeatures =badwords, verbose=VERBOSE)
+        )
+        #Remove less frequent features to reduce size of DT
+        myDFM <- trim(myDFM, minCount=6,minDoc=2,verbose=VERBOSE)
+        myDFM <- topfeatures(myDFM, n=nfeature(myDFM))
+
+        return(myDFM)
+    }
+    ng1<-makeDFM(corpi,N=1,badwords)            #30% data Took 1.5 min
+    save(ng1, file = cache_dfm1_filename); gc()
+    ng2<-makeDFM(corpi,N=2,badwords)            #30% data Took 1.4 hours
+    save(ng2, file = cache_dfm2_filename); gc()
+    ng3<-makeDFM(corpi,N=3,badwords)            #30% data Took 3.6 hours
+    save(ng3, file = cache_dfm3_filename); gc()  
+    # ng4<-makeDFM(corpi,N=4,badwords)            #30% data Took 11.4 hours. TO EXPENSIVE!
+    # save(ng4, file = cache_dfm4_filename); gc()  
+
+    #Load/Add External Ngrams from COCA
+    EX4 <- fread(coca_n4_filename, nrows=-1, verbose = F, col.names = c('cnt','W1','W2','W3','W4'))
+    EX4[, ngram := paste(W1,W2,W3,W4,sep=' ')]
+    EX3 <- fread(coca_n3_filename, nrows=-1, verbose = F, col.names = c('cnt','W1','W2','W3'))
+    EX3[, ngram := paste(W1,W2,W3,sep=' ')]
+    EX2 <- fread(coca_n2_filename, nrows=-1, verbose = F, col.names = c('cnt','W1','W2'))
+    EX2[, ngram := paste(W1,W2,sep=' ')]
+
+
+    if(VERBOSE) print(paste("Saving:",cache_dfm_filename))
+    save(ng1,ng2,ng3,ng4,EX4,EX3,EX2, file=cache_dfm_filename)
+    rm(corpi)
+} else {
+    load(cache_dfm_filename, verbose=VERBOSE)
+    rm(corpi)
+}
+
+
+### CREATE OUTPUT DT THAT WILL DRIVE THE PREDICTION MODEL ###
+if (!file.exists(cache_DT_filename)) {
+    
+    #Function to build desired DT Format   
+    #IN: freq vector, names vector, source vector
+    #OUT: ng_name|ng_len|ng_src|predictor|prediction|freq|rel_freq|mle
+    createDT <- function(freq, txt, src){
+        len <- str_count(txt, pattern =regex("\\S+", ignore_case = T))
+        TMP_DT <- data.table(
+                        ng_name = txt,  
+                        ng_len = as.factor(len),
+                        ng_src = as.factor(src),
+                        predictor = word(txt, start=1, end=len-1),  
+                        prediction = word(txt, -1) ,
+                        freq = freq, 
+                        rel_freq = as.double(freq/sum(freq)) #ng_freq / total_tokens
+        )
+        #TODO - calculate MLE.  Need to obtain the predictorFreq for each NGRAM 
+        # https://rstudio-pubs-static.s3.amazonaws.com/52230_5ae0d25125b544caab32f75f0360e775.html
+        # http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/
+          return(TMP_DT)
+    }
+
+    #Create Data Tables and bind them into one single data table
+    DT <- rbind(
+                createDT(ng1,names(ng1),'processed_corpi'),
+                createDT(ng2,names(ng2),'processed_corpi'),
+                createDT(ng3,names(ng3),'processed_corpi'),
+                createDT(ng4,names(ng4),'processed_corpi'),
+                
+                createDT(EX4$cnt, EX4$ngram, 'external_coca'),
+                createDT(EX3$cnt, EX3$ngram, 'external_coca'),
+                createDT(EX2$cnt, EX2$ngram, 'external_coca')
+    )
+    
+    # order data table by comparison value (freq,rel_freq,MLE)
+    setorder(DT, ng_len, -freq, -rel_freq)        
+
+    if(VERBOSE) print(object.size(DT), quote=T, units="auto" )
+    if(VERBOSE) print(paste("Saving:",cache_DT_filename))
+    save(DT, file=cache_DT_filename)
+    # rm(ng.freq,ng.names,tot.features,tot.tokens, dfm.trim, C4, C3, C2)
+
+} else {
+    load(cache_DT_filename, verbose=VERBOSE)
+    # rm(ng.freq,ng.names,tot.features,tot.tokens, dfm.trim, C4, C3, C2)
+}
+load("./cache/DT.RData", verbose=T)
+
+
+
+### PREDICTION MODEL/FUNCTION
+# assumes longest ngram will be the best match.
+# If can't find it, 'backs off' and looks for ngrams one size smaller
+# predict function can only handle 3 words being input at a time.  Need to enforce either at app or in function.
+#DT: ng_name|ng_len|ng_src|predictor|prediction|freq|rel_freq|mle
+getMatches <- function(query,backoff=1){
+    return(DT[predictor==word(query, start=backoff, end=-1, sep=" "),])
+}
+#get top N predictTxt results
+predictNextWord <- function(query, predictN=2, verbose=F){
+    #if needed, truncate to last 3 words
+    wc <- str_count(query, pattern = boundary("word"))
+    if(wc>3) query <- word(query, start=-3, end=-1, sep = " ")
+
+    ###REMOVE PUNCTUATION LIKE QUANTEDA
+    #Lowercase & Trim
+    query <- str_trim(str_to_lower(query), "both")
+    #removePunct
+    query <- stri_replace_all_regex(query, "(\\b)[\\p{Pd}](\\b)", "$1_hy_$2") # to preserve intra-word hyphens, replace with _hy_
+    query <- stri_replace_all_fixed(query, "_hy_", "-") # put hyphens back the fast way
+
+
+    if( nrow(getMatches(query,1)) ){
+        if(verbose) print(paste("[query:",query,"] 3 word match"))
+        result <- getMatches(query,1)
+    } else if( nrow(getMatches(query,2)) ) {
+        if(verbose) print(paste("[query:",query,"] 2 word match"))
+        result <- getMatches(query,2)
+    } else if ( nrow(getMatches(query,3)) ){
+        if(verbose) print(paste("[query:",query,"] 1 word match"))
+        result <- getMatches(query,3)
+    } else{
+        if(verbose) print(paste("[query:",query,"] no match"))
+        result <- DT[ng_len=='1']
+    }
+    if(verbose) { print(head(result),predictN); out<-result[1:predictN, ]}
+    else { out<- unique(as.data.table(result[1:predictN, prediction])) }
+
+    return(out)
+}
+# predictNextWord(query, predictN=10, verbose=T)
+
+
+
+
+### VALIDATE PREDICTION ACCURACY
+source('./munge/utils.R')
+
+validatePredicitonResults(nWordsIn = 500, nWordsOut = 1)
+validatePredicitonResults(nWordsIn = 500, nWordsOut = 3)
+validatePredicitonResults(nWordsIn = 500, nWordsOut = 5)
+validatePredicitonResults(nWordsIn = 500, nWordsOut = 10)
+
+# Mode   FALSE    TRUE    %
+# 1    1271     148       11
+# 3    1155     264       22
+# 5    1114     305       27
+# 10    1048     371       35
+
+
+
+```
+
+   
+    

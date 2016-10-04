@@ -6,7 +6,7 @@
 ###Objective
 The objective of the capstone project was to build a predictive model and implement a web app that predicts the next word when a user enters a phrase.
 
-<img src="./figures/swiftkey-splash-2.jpg" alt="Context Image" style="width: 200px;"/>
+<img src="./figures/swiftkey-splash-2.jpg" alt="Context Image" style="width: 200px; height: 200px "/>
 
 ###Take Aways
 * Natural Language Processing is challenging and fun.

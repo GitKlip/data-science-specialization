@@ -4,7 +4,9 @@ Erik Cornelsen
 
 
 #Introduction
-The Data Science Specialization from Johns Hopkins University covers the concepts and tools used throughout the entire data science pipeline, from asking the right kinds of questions to making inferences and publishing results. The specialization consists of 9 courses and concludes with a Capstone project where I applied the skills I learned throughout the courses.
+A 10 course Data Science Specialization from Johns Hopkins University that covers the concepts and tools used throughout the entire data science pipeline, from asking the right kinds of questions to making inferences and publishing results. 
+
+[Specialization Certificate](https://www.coursera.org/account/accomplishments/specialization/S7AASCTDAEYM)
 
 
 #Coursework Portfolio
@@ -69,26 +71,21 @@ Learned and applied linear regression models for prediction.  Topics learned: re
 ##Practical Machine Learning
 Applied the basic components of building and applying prediction functions. Created training and tests sets while dealing with overfitting and error rates. Used various machine learning algorithms including regression, classification trees, Naive Bayes, and random forests through the complete process of building prediction functions including data collection, feature creation, algorithms, and evaluation.
 
-**Project:** [Quality Classificationa of Human Exercises](./08-MachineLearning/projects/ML_Project.pdf) | [Source](./08-MachineLearning/projects/ML_Project.Rmd)  
+**Project:** [Quality Classification of Human Exercises](./08-MachineLearning/projects/ML_Project.pdf) | [Source](./08-MachineLearning/projects/ML_Project.Rmd)  
 **Certificate:** [Pratical Machine Learning](https://www.coursera.org/account/accomplishments/certificate/9DKPUF8BF4EU)  
 
 
 ##Developing Data Products
-Learn how to communicate a statistical analysis output with a data product. The course covers shiny which is a web APP, R packages, rchart, Googlevis ,interactive graphics and slidify. The project is to create a data product to tell a story about the data to a mass audience.
-
-A data product is the production output from a statistical analysis. Data products automate complex analysis tasks or use technology to expand the utility of a data informed model, algorithm or inference. This course covers the basics of creating data products using Shiny, R packages, and interactive graphics. The course will focus on the statistical fundamentals of creating a data product that can be used to tell a story about data to a mass audience.
+Learn how to communicate a statistical analysis output with a data product. The course covers shiny which is a web APP, R packages, rchart, Google Vis ,interactive graphics and slidify. The project is to create a data product to tell a story about the data to a mass audience.
 
 **Project:** [Interactive Shiny WebApp](https://cornelsen.shinyapps.io/shinyCurrentHomePrice/) | [Source](./09-DataProducts/projects/shinyCurrentHomePrice/app.R) | [Presentation](http://rpubs.com/ercorne/shinyHomeHPI)  
 **Certificate:** [Developing Data Products](https://www.coursera.org/account/accomplishments/certificate/A3K54UZCR6JE)  
 
 
-##Capstone Project - Text Mining & NLP  (IN PROGRESS)
-create a usable/public data product in collaboration with SwiftKey (developer of keyboard apps). 
-* Analyze a large corpus of text documents to discover the data structure
-* Clean text data and perform complex regressions
-* Create visualizations and presentation to communicate your data analyses
-* Build a predictive data model for analyzing large textual data sets
-* Build a final data product 
+##Capstone Project - Text Mining & NLP 
+Explore and Analyze 3 large corpra of text. Build a model that will predict the next word after being given some text input (like typing on your mobile phone).  Productionalize the predictive model in a web application that is accessable to everyone.
 
-**Project:** In Process  
-**Certificate:** In Process  
+**Exploratory Analysis:**  [Milestone Analysis Report](http://rpubs.com/ercorne/ds_capstone_milestone) performed in 'R' and published via RPubs  
+**Project Presentation:** [R Presentation](http://rpubs.com/ercorne/ds_capstone_presentation) describing the model and web app.  
+**Predictive Web App:** [Web App](https://cornelsen.shinyapps.io/NLP_Text_Predictor/) Developed in 'Shiny' and published via shinyapps.io  
+**Certificate:** [Data Science Capstone](https://www.coursera.org/account/accomplishments/certificate/Q8LFZ6RLW7SS)  
